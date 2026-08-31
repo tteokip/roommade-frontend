@@ -6,8 +6,6 @@ Roommade - 청년 자립 준비 지원 플랫폼 프론트엔드 서버
 
 Vue 3 + Vite / Pinia / Vue Router / TanStack Query / Tailwind CSS / Zod / axios
 
-> 컴포넌트 구조, 상태 관리 규칙 등 세부 컨벤션은 아직 확정 전입니다.
-> 확정되는 대로 이 문서에 섹션을 추가합니다.
 
 ## 디렉터리 구조
 
@@ -15,10 +13,11 @@ Vue 3 + Vite / Pinia / Vue Router / TanStack Query / Tailwind CSS / Zod / axios
 src/
 ├── api/          # axios 인스턴스, 백엔드 API 호출 함수
 ├── assets/       # 이미지, 폰트 등 정적 자원
-├── components/   # 공통 컴포넌트
+├── components/   # 페이지·기능 중심 컴포넌트
 ├── composables/  # Vue Composition 함수
-├── constants/     # 상수
+├── constants/    # 상수
 ├── router/       # Vue Router 설정
+├── shared/ui/    # 여러 화면에서 재사용하는 범용 UI
 ├── stores/       # Pinia 스토어
 ├── utils/        # 유틸리티 함수
 ├── views/        # 라우트에 매핑되는 페이지 컴포넌트
