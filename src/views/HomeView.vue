@@ -1,11 +1,9 @@
 <script setup>
-import { AppHeader } from '@/shared/ui'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 </script>
 
 <template>
   <div class="min-h-screen bg-page">
-    <AppHeader title="roommade" />
     <BottomTabLayout>
       <main class="flex min-h-[60vh] items-center justify-center">
         <h1 class="text-2xl font-semibold">roommade</h1>
