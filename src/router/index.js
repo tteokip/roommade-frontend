@@ -6,7 +6,6 @@ const routes = [
     name: 'home',
     component: () => import('@/views/HomeView.vue'),
   },
-  // 홈 외 탭 화면은 아직 실제 콘텐츠가 없어 임시로 준비 중 화면을 연결한다.
   {
     path: '/readiness',
     name: 'readiness',
@@ -29,13 +28,13 @@ const routes = [
     name: 'dailyLife',
     component: () => import('@/views/DailyLifeView.vue'),
   },
-  // 등록/수정/밸런스게임 화면은 아직 구현 전이라 임시로 준비 중 화면을 연결한다.
   {
     path: '/house-comparisons/houses/:houseType/register',
     name: 'house-register',
-    component: () => import('@/views/NotReadyView.vue'),
+    component: () => import('@/views/HouseRegisterView.vue'),
     props: true,
   },
+  // 수정/밸런스게임 화면은 아직 구현 전이라 임시로 준비 중 화면을 연결한다.
   {
     path: '/house-comparisons/houses/:houseType/edit',
     name: 'house-edit',
