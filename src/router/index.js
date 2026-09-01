@@ -10,8 +10,7 @@ const routes = [
   {
     path: '/readiness',
     name: 'readiness',
-    component: () => import('@/views/TabPlaceholderView.vue'),
-    props: { title: '독립진단' },
+    component: () => import('@/views/ReadinessView.vue'),
   },
   {
     path: '/house-comparisons',
