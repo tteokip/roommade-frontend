@@ -25,6 +25,12 @@ const routes = [
     component: () => import('@/views/TabPlaceholderView.vue'),
     props: { title: '지원금' },
   },
+  // 독립진단(readiness)에서 준비를 마치면 넘어오는 "독립 후" 화면. 하단 탭에는 없다.
+  {
+    path: '/readiness/daily-life',
+    name: 'dailyLife',
+    component: () => import('@/views/DailyLifeView.vue'),
+  },
 ]
 
 if (import.meta.env.DEV) {
