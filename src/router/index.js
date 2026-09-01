@@ -23,6 +23,12 @@ const routes = [
     component: () => import('@/views/TabPlaceholderView.vue'),
     props: { title: '지원금' },
   },
+  // 독립진단(readiness)에서 준비를 마치면 넘어오는 "독립 후" 화면. 하단 탭에는 없다.
+  {
+    path: '/readiness/daily-life',
+    name: 'dailyLife',
+    component: () => import('@/views/DailyLifeView.vue'),
+  },
   // 등록/수정/밸런스게임 화면은 아직 구현 전이라 임시로 준비 중 화면을 연결한다.
   {
     path: '/house-comparisons/houses/:houseType/register',
