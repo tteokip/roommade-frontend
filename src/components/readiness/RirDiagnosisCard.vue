@@ -63,10 +63,18 @@ const markerStyle = computed(() => ({
 
 const guidance = computed(() => {
   if (props.diagnosis.requiredRentReduction === 0) {
-    return '현재 월세 수준이면 목표 RIR을 달성할 수 있어요!'
+    return {
+      message: '현재 월세 수준이면 목표 RIR을 달성할 수 있어요!',
+      reductionAmount: null,
+      targetPercent: null,
+    }
   }
 
-  return `월세를 ${formatAmount(props.diagnosis.requiredRentReduction)} 낮추면 RIR ${formatNumber(props.diagnosis.targetRirPercent)}% 이하로 달성할 수 있어요!`
+  return {
+    message: null,
+    reductionAmount: formatAmount(props.diagnosis.requiredRentReduction),
+    targetPercent: `${formatNumber(props.diagnosis.targetRirPercent)}%`,
+  }
 })
 
 function formatNumber(value) {
@@ -175,7 +183,7 @@ function formatAmount(value) {
                 목표 RIR
                 <span>{{ headline.targetPercent }}</span>
                 {{ headline.middleText }}
-                <span v-if="headline.gapPercent" class="text-brand-primary">
+                <span v-if="headline.gapPercent" class="text-sm text-brand-primary">
                   {{ headline.gapPercent }}
                 </span>
                 {{ headline.endText }}
@@ -208,7 +216,14 @@ function formatAmount(value) {
               <p
                 class="whitespace-nowrap text-[clamp(0.5625rem,2.55vw,0.6875rem)] leading-5 text-body"
               >
-                {{ guidance }}
+                <template v-if="guidance.message">{{ guidance.message }}</template>
+                <template v-else>
+                  {{ '월세를 '
+                  }}<span class="text-xs font-extrabold text-brand-primary">{{
+                    guidance.reductionAmount
+                  }}</span
+                  >{{ ` 낮추면 RIR ${guidance.targetPercent} 이하로 달성할 수 있어요!` }}
+                </template>
               </p>
             </div>
           </div>
