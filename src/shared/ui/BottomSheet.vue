@@ -17,7 +17,7 @@ function close() {
     <Transition name="fade">
       <div v-if="modelValue" class="fixed inset-0 z-40 bg-slate-950/30" @click.self="closeOnBackdrop && close()">
         <Transition name="sheet">
-          <section v-if="modelValue" class="absolute inset-x-0 bottom-0 mx-auto max-w-md rounded-t-[28px] bg-white px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
+          <section v-if="modelValue" class="absolute inset-x-0 bottom-0 mx-auto max-h-[90dvh] max-w-md overflow-y-auto rounded-t-[28px] bg-white px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3 shadow-2xl">
             <div class="mx-auto h-1 w-10 rounded-pill bg-slate-200" />
             <header v-if="title" class="mt-5 flex items-center justify-between">
               <h2 class="text-xl font-extrabold text-ink">{{ title }}</h2>

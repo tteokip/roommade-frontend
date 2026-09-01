@@ -21,8 +21,13 @@ const routes = [
   {
     path: '/benefits',
     name: 'benefit',
-    component: () => import('@/views/TabPlaceholderView.vue'),
-    props: { title: '지원금' },
+    component: () => import('@/views/BenefitsView.vue'),
+  },
+  {
+    path: '/benefits/policies',
+    name: 'benefit-policies',
+    component: () => import('@/views/PolicyListView.vue'),
+    meta: { tab: 'benefit' },
   },
   // 등록/수정/밸런스게임 화면은 아직 구현 전이라 임시로 준비 중 화면을 연결한다.
   {
