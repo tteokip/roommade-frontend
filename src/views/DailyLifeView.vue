@@ -172,6 +172,19 @@ const rirBadgeClass = computed(() => {
 })
 const showRirDetail = ref(false)
 
+function toManwon(amount) {
+  return Math.round(amount / 10000).toLocaleString()
+}
+const rirExpectedRentManwon = computed(() =>
+  toManwon(rirDiagnosis.value?.diagnosis?.expectedMonthlyRent ?? 0),
+)
+const rirRequiredReductionManwon = computed(() =>
+  toManwon(rirDiagnosis.value?.diagnosis?.requiredRentReduction ?? 0),
+)
+const rirMonthlyIncomeManwon = computed(() =>
+  toManwon(rirDiagnosis.value?.diagnosis?.monthlyIncome ?? 0),
+)
+
 // 독립진단(readiness) 페이지에서 "독립 전 → 독립 후"로 넘어올 때 ?intro=1 로 진입하면
 // 스포트라이트 2단계 소개를 보여준다. 그 외에는 바로 일반 화면으로 보여준다.
 const spendingCardEl = ref(null)
@@ -642,10 +655,8 @@ onBeforeUnmount(() => {
                       >
                     </div>
                     <p class="text-[11px] text-muted">
-                      월세
-                      {{
-                        (rirDiagnosis.diagnosis.expectedMonthlyRent / 10000).toLocaleString()
-                      }}만원 · 소득 대비 {{ rirDiagnosis.diagnosis.rirPercent }}%
+                      월세 {{ rirExpectedRentManwon }}만원 · 소득 대비
+                      {{ rirDiagnosis.diagnosis.rirPercent }}%
                     </p>
                   </div>
                 </div>
@@ -682,19 +693,14 @@ onBeforeUnmount(() => {
               >
                 <p v-if="rirDiagnosis.diagnosis.requiredRentReduction > 0">
                   목표 RIR {{ rirDiagnosis.diagnosis.targetRirPercent }}% 이하까지 월세를
-                  <strong class="text-brand-primary"
-                    >{{
-                      (rirDiagnosis.diagnosis.requiredRentReduction / 10000).toLocaleString()
-                    }}만원</strong
-                  >
+                  <strong class="text-brand-primary">{{ rirRequiredReductionManwon }}만원</strong>
                   낮추면 만점이에요.
                 </p>
                 <p v-else class="font-bold text-brand-primary">
                   목표 RIR {{ rirDiagnosis.diagnosis.targetRirPercent }}% 이하를 달성했어요!
                 </p>
                 <p class="mt-1 text-muted">
-                  월 소득 {{ (rirDiagnosis.diagnosis.monthlyIncome / 10000).toLocaleString() }}만원
-                  기준으로 계산했어요.
+                  월 소득 {{ rirMonthlyIncomeManwon }}만원 기준으로 계산했어요.
                 </p>
               </div>
             </AppCard>
