@@ -16,10 +16,6 @@ const props = defineProps({
   },
 })
 
-const trendLabel = computed(() => (props.differenceFromLastMonth > 0 ? '더 쓰는 중' : '덜 쓰는 중'))
-const trendAmount = computed(
-  () => `${Math.round(Math.abs(props.differenceFromLastMonth) / 10000)}만원`,
-)
 const trendPercent = computed(() => {
   if (!props.sameDayLastMonthTotal) return null
   return Math.round((Math.abs(props.differenceFromLastMonth) / props.sameDayLastMonthTotal) * 100)
@@ -40,24 +36,43 @@ function toComparableDate(value) {
 }
 
 // 하루 지출 배열을 "일자별 누적 합계" 배열로 바꾼다.
-function toCumulative(breakdown) {
+function toCumulative(breakdown, endDay) {
   const sorted = [...breakdown].sort(
     (a, b) => toComparableDate(a.spendingDate) - toComparableDate(b.spendingDate),
   )
   let running = 0
-  return sorted.map((item) => {
-    running += item.totalAmount
-    return { day: toDayOfMonth(item.spendingDate), value: running }
-  })
+  const cumulative = sorted
+    .filter((item) => toDayOfMonth(item.spendingDate) <= endDay)
+    .map((item) => {
+      running += item.totalAmount
+      return { day: toDayOfMonth(item.spendingDate), value: running }
+    })
+
+  const lastPoint = cumulative.at(-1)
+  if (lastPoint && lastPoint.day < endDay) {
+    cumulative.push({ day: endDay, value: lastPoint.value })
+  }
+
+  return cumulative
 }
 
+const currentDay = new Date().getDate()
 const daysInMonth = computed(() => {
   const now = new Date()
   return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
 })
+const daysInLastMonth = computed(() => {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), 0).getDate()
+})
+// 저번달이 이번달보다 길 수 있어(예: 8월→9월), 저번달 그래프가 잘리지 않도록
+// 두 달 중 더 긴 쪽을 기준으로 x축을 잡는다.
+const xAxisDayCount = computed(() => Math.max(daysInMonth.value, daysInLastMonth.value))
 
-const thisMonthCumulative = computed(() => toCumulative(props.dailyBreakdown))
-const lastMonthCumulative = computed(() => toCumulative(props.lastMonthDailyBreakdown))
+const thisMonthCumulative = computed(() => toCumulative(props.dailyBreakdown, currentDay))
+const lastMonthCumulative = computed(() =>
+  toCumulative(props.lastMonthDailyBreakdown, daysInLastMonth.value),
+)
 
 const sharedMax = computed(() =>
   Math.max(
@@ -74,7 +89,7 @@ function toPolyline(points) {
   if (points.length < 2) return ''
   return points
     .map((p) => {
-      const x = ((p.day - 1) / (daysInMonth.value - 1)) * CHART_WIDTH
+      const x = ((p.day - 1) / (xAxisDayCount.value - 1)) * CHART_WIDTH
       const y = CHART_HEIGHT - 4 - (p.value / sharedMax.value) * (CHART_HEIGHT - 8)
       return `${x},${y}`
     })
@@ -83,6 +98,10 @@ function toPolyline(points) {
 
 const thisMonthPolyline = computed(() => toPolyline(thisMonthCumulative.value))
 const lastMonthPolyline = computed(() => toPolyline(lastMonthCumulative.value))
+const lastMonthAreaPoints = computed(() => {
+  if (!lastMonthPolyline.value) return ''
+  return `${lastMonthPolyline.value} ${CHART_WIDTH},${CHART_HEIGHT} 0,${CHART_HEIGHT}`
+})
 const hasChartData = computed(
   () => thisMonthCumulative.value.length >= 2 || lastMonthCumulative.value.length >= 2,
 )
@@ -91,7 +110,7 @@ const markerPosition = computed(() => {
   const last = thisMonthCumulative.value.at(-1)
   if (!last) return null
   return {
-    x: ((last.day - 1) / (daysInMonth.value - 1)) * CHART_WIDTH,
+    x: ((last.day - 1) / (xAxisDayCount.value - 1)) * CHART_WIDTH,
     y: CHART_HEIGHT - 4 - (last.value / sharedMax.value) * (CHART_HEIGHT - 8),
   }
 })
@@ -133,21 +152,19 @@ const markerPosition = computed(() => {
 
       <div class="mt-4 flex gap-4">
         <div class="flex w-1/2 flex-col justify-between gap-4">
-          <div>
-            <p class="mb-1 text-xs font-medium text-muted">이번 달 총 지출</p>
-            <p class="text-2xl font-black leading-none text-brand-primary">
+          <div class="flex flex-1 flex-col justify-center pt-1">
+            <p class="mb-1.5 text-[15px] font-medium text-muted">이번 달 총 지출</p>
+            <p class="text-[28px] font-black leading-none text-brand-primary">
               {{ thisMonthTotal.toLocaleString() }}원
             </p>
           </div>
           <div
-            class="flex items-center gap-2.5 rounded-2xl border border-gray-100 bg-gray-50 px-3.5 py-3"
+            class="-translate-x-2 flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-3.5 py-1"
           >
-            <div
-              class="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] bg-red-50"
-            >
+            <div class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-red-50">
               <svg
-                width="17"
-                height="17"
+                width="21"
+                height="21"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="#ef4444"
@@ -157,11 +174,11 @@ const markerPosition = computed(() => {
               </svg>
             </div>
             <div>
-              <p class="text-[11px] font-medium text-muted">지난달 대비</p>
-              <p class="text-[13px] font-extrabold text-red-500">
+              <p class="text-[13px] font-medium text-muted">지난달 대비</p>
+              <p class="text-[17px] font-extrabold leading-tight text-red-500">
                 {{ differenceFromLastMonth.toLocaleString() }}원
               </p>
-              <p v-if="trendPercent !== null" class="text-[11px] text-muted">
+              <p v-if="trendPercent !== null" class="text-[13px] text-muted">
                 {{ differenceFromLastMonth > 0 ? '↑' : '↓' }} {{ trendPercent }}%
               </p>
             </div>
@@ -169,42 +186,12 @@ const markerPosition = computed(() => {
         </div>
 
         <div class="flex w-1/2 flex-col">
-          <div
-            class="mb-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-muted"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            {{ month }}
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </div>
-
           <template v-if="hasChartData">
-            <p class="mb-1 text-[11px] leading-tight text-body">
-              지난달보다 <strong class="font-bold text-rose-500">{{ trendAmount }}</strong>
-              {{ trendLabel }}
-            </p>
-            <div class="mb-1 flex items-center gap-2.5 text-[10px] text-muted">
-              <span class="flex items-center gap-1"
+            <div class="mb-1 flex items-center justify-end gap-2.5 text-[10px]">
+              <span class="flex items-center gap-1 font-bold text-rose-500"
                 ><span class="h-0.5 w-3 bg-rose-500" />{{ month }}</span
               >
-              <span class="flex items-center gap-1"
+              <span class="flex items-center gap-1 text-muted"
                 ><span class="h-0.5 w-3 bg-gray-300" />{{ previousMonth }}</span
               >
             </div>
@@ -214,6 +201,17 @@ const markerPosition = computed(() => {
               preserveAspectRatio="none"
               aria-hidden="true"
             >
+              <defs>
+                <linearGradient id="last-month-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#e5e7eb" stop-opacity="0.55" />
+                  <stop offset="100%" stop-color="#f9fafb" stop-opacity="0.12" />
+                </linearGradient>
+              </defs>
+              <polygon
+                v-if="lastMonthAreaPoints"
+                :points="lastMonthAreaPoints"
+                fill="url(#last-month-area)"
+              />
               <polyline
                 v-if="lastMonthPolyline"
                 :points="lastMonthPolyline"
