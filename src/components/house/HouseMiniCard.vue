@@ -30,7 +30,7 @@ function goToRegister() {
 </script>
 
 <template>
-  <AppCard padding="md" class="flex flex-col gap-3">
+  <AppCard padding="md" class="min-w-0 flex flex-col gap-3">
     <template v-if="house">
       <div class="flex items-center justify-between">
         <span
@@ -42,7 +42,7 @@ function goToRegister() {
           수정 ✏️
         </button>
       </div>
-      <p class="text-base font-extrabold leading-snug text-ink">
+      <p class="break-words text-base font-extrabold leading-snug text-ink">
         {{ formatOrFallback(house.location) }}
       </p>
       <p class="text-xs font-bold" :class="pillTextClass">✨ AI 정리 완료</p>
