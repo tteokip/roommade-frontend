@@ -307,6 +307,7 @@ onBeforeUnmount(() => {
               :same-day-last-month-total="livingCost.sameDayLastMonthTotal"
               :difference-from-last-month="livingCost.differenceFromLastMonth"
               :daily-breakdown="livingCost.dailyBreakdown"
+              :last-month-daily-breakdown="livingCost.lastMonthDailyBreakdown"
             />
           </div>
 
@@ -395,7 +396,7 @@ onBeforeUnmount(() => {
                         :count="lv.level"
                         :total="lv.totalStars"
                         :color="lv.active ? '#7c3aed' : '#9ca3af'"
-                        size="13"
+                        :size="13"
                       />
                       <CoinBadge :amount="lv.rewardCoin" :bordered="false" />
                     </div>

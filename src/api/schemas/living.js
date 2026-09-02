@@ -14,6 +14,7 @@ export const dailyLivingCostOverviewSchema = z.object({
   sameDayLastMonthTotal: z.number(),
   differenceFromLastMonth: z.number(),
   dailyBreakdown: z.array(dailyLivingCostItemSchema),
+  lastMonthDailyBreakdown: z.array(dailyLivingCostItemSchema),
 })
 
 export const emergencyFundSchema = z.object({
