@@ -19,8 +19,13 @@ const routes = [
   {
     path: '/benefits',
     name: 'benefit',
-    component: () => import('@/views/TabPlaceholderView.vue'),
-    props: { title: '지원금' },
+    component: () => import('@/views/BenefitsView.vue'),
+  },
+  {
+    path: '/benefits/policies',
+    name: 'benefit-policies',
+    component: () => import('@/views/PolicyListView.vue'),
+    meta: { tab: 'benefit' },
   },
   // 독립진단(readiness)에서 준비를 마치면 넘어오는 "독립 후" 화면. 하단 탭에는 없다.
   {
