@@ -5,16 +5,7 @@ import { getYouthPolicies, getYouthPolicyDetail } from '@/api/benefits'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import PolicyCard from '@/components/benefit/PolicyCard.vue'
 import PolicyDetailSheet from '@/components/benefit/PolicyDetailSheet.vue'
-import {
-  AppButton,
-  AppHeader,
-  AppInput,
-  AppSelect,
-  BottomSheet,
-  EmptyState,
-  ErrorState,
-  LoadingState,
-} from '@/shared/ui'
+import { AppButton, AppHeader, EmptyState, ErrorState, LoadingState } from '@/shared/ui'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,19 +14,25 @@ const regionOptions = [
   { value: '', label: '전국' },
   { value: '11', label: '서울특별시' },
   { value: '26', label: '부산광역시' },
+  { value: '27', label: '대구광역시' },
   { value: '28', label: '인천광역시' },
+  { value: '29', label: '광주광역시' },
+  { value: '30', label: '대전광역시' },
+  { value: '31', label: '울산광역시' },
+  { value: '36', label: '세종특별자치시' },
   { value: '41', label: '경기도' },
   { value: '42', label: '강원특별자치도' },
+  { value: '43', label: '충청북도' },
+  { value: '44', label: '충청남도' },
+  { value: '45', label: '전북특별자치도' },
+  { value: '46', label: '전라남도' },
+  { value: '47', label: '경상북도' },
+  { value: '48', label: '경상남도' },
   { value: '50', label: '제주특별자치도' },
 ]
 
 const selectedRegion = ref(String(route.query.region ?? '11'))
-const selectedAge = ref(String(route.query.age ?? ''))
-const selectedIncome = ref(String(route.query.income ?? ''))
-const draftRegion = ref(selectedRegion.value)
-const draftAge = ref(selectedAge.value)
-const draftIncome = ref(selectedIncome.value)
-const isFilterOpen = ref(false)
+const isRegionOptionsOpen = ref(false)
 const policies = ref([])
 const totalElements = ref(0)
 const currentPage = ref(1)
@@ -48,16 +45,14 @@ const policyDetail = ref(null)
 const isPolicyDetailLoading = ref(false)
 const isPolicyDetailError = ref(false)
 
-const regionLabel = computed(() => (
-  regionOptions.find((option) => option.value === selectedRegion.value)?.label ?? '전국'
-))
+const regionLabel = computed(
+  () => regionOptions.find((option) => option.value === selectedRegion.value)?.label ?? '전국',
+)
 const hasMore = computed(() => policies.value.length < totalElements.value)
 
 function buildParams(page) {
   return {
     region: selectedRegion.value || undefined,
-    age: selectedAge.value || undefined,
-    income: selectedIncome.value || undefined,
     page,
     size: 10,
   }
@@ -72,7 +67,9 @@ async function fetchPolicies(page, append = false) {
 
   try {
     const result = await getYouthPolicies(buildParams(page))
-    policies.value = append ? [...policies.value, ...(result.content ?? [])] : (result.content ?? [])
+    policies.value = append
+      ? [...policies.value, ...(result.content ?? [])]
+      : (result.content ?? [])
     totalElements.value = result.totalElements ?? 0
     currentPage.value = page
   } catch {
@@ -92,29 +89,12 @@ function loadMore() {
   fetchPolicies(currentPage.value + 1, true)
 }
 
-function openFilter() {
-  draftRegion.value = selectedRegion.value
-  draftAge.value = selectedAge.value
-  draftIncome.value = selectedIncome.value
-  isFilterOpen.value = true
-}
-
-function clearFilter() {
-  draftRegion.value = ''
-  draftAge.value = ''
-  draftIncome.value = ''
-}
-
-function applyFilter() {
-  selectedRegion.value = draftRegion.value
-  selectedAge.value = draftAge.value
-  selectedIncome.value = draftIncome.value
-  isFilterOpen.value = false
+function selectRegion(region) {
+  selectedRegion.value = region
+  isRegionOptionsOpen.value = false
   router.replace({
     query: {
       ...(selectedRegion.value && { region: selectedRegion.value }),
-      ...(selectedAge.value && { age: selectedAge.value }),
-      ...(selectedIncome.value && { income: selectedIncome.value }),
     },
   })
   reloadPolicies()
@@ -143,15 +123,42 @@ onMounted(reloadPolicies)
   <div class="min-h-screen bg-brand-lavender">
     <AppHeader title="주거 정책" mode="back" @back="router.back()">
       <template #trailing>
-        <button type="button" class="text-sm font-extrabold text-brand-primary" @click="openFilter">
-          필터
-        </button>
+        <div class="relative">
+          <button
+            type="button"
+            class="text-sm font-extrabold text-brand-primary"
+            :aria-expanded="isRegionOptionsOpen"
+            aria-haspopup="listbox"
+            @click="isRegionOptionsOpen = !isRegionOptionsOpen"
+          >
+            지역 선택
+          </button>
+          <div
+            v-if="isRegionOptionsOpen"
+            class="absolute right-0 top-full z-20 mt-3 max-h-85 w-52 overflow-x-hidden overflow-y-auto overscroll-contain rounded-card bg-white p-2 shadow-floating"
+            role="listbox"
+            aria-label="지역 선택"
+          >
+            <button
+              v-for="option in regionOptions"
+              :key="option.value"
+              type="button"
+              class="flex w-full items-center rounded-control px-4 py-3 text-left text-sm font-bold text-ink hover:bg-brand-lavender"
+              :class="{ 'bg-brand-lavender text-brand-primary': selectedRegion === option.value }"
+              role="option"
+              :aria-selected="selectedRegion === option.value"
+              @click="selectRegion(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
       </template>
     </AppHeader>
 
     <BottomTabLayout>
       <main class="mx-auto max-w-md px-4 pt-4">
-        <p class="text-sm text-muted">{{ regionLabel }} · {{ selectedAge ? `만 ${selectedAge}세` : '전체 연령' }}</p>
+        <p class="text-sm text-muted">{{ regionLabel }} · 회원님의 나이와 소득 기준</p>
         <div class="mt-2 flex items-end justify-between">
           <h2 class="text-2xl font-extrabold text-ink">내 조건에 맞는 주거 정책</h2>
           <span class="text-sm font-bold text-muted">{{ totalElements }}건</span>
@@ -171,32 +178,22 @@ onMounted(reloadPolicies)
             :policy="policy"
             @detail="openPolicyDetail"
           />
-          <AppButton v-if="hasMore" full-width variant="outline" :disabled="isLoadingMore" @click="loadMore">
-            {{ isLoadingMore ? '정책을 불러오는 중...' : `정책 더 보기 (${policies.length}/${totalElements})` }}
+          <AppButton
+            v-if="hasMore"
+            full-width
+            variant="outline"
+            :disabled="isLoadingMore"
+            @click="loadMore"
+          >
+            {{
+              isLoadingMore
+                ? '정책을 불러오는 중...'
+                : `정책 더 보기 (${policies.length}/${totalElements})`
+            }}
           </AppButton>
         </div>
       </main>
     </BottomTabLayout>
-
-    <BottomSheet v-model="isFilterOpen" title="지원 정책 조건 설정">
-      <div class="space-y-5">
-        <AppSelect v-model="draftRegion" label="지역" :options="regionOptions" />
-        <AppInput
-          v-model="draftAge"
-          label="만 나이"
-          type="number"
-          min="0"
-          max="120"
-          placeholder="예: 25"
-          hint="입력하지 않으면 모든 연령의 정책을 조회해요"
-        />
-        <AppInput v-model="draftIncome" label="연 소득" type="number" placeholder="예: 36000000" />
-        <div class="flex gap-3 pt-2">
-          <AppButton class="flex-1" variant="outline" @click="clearFilter">초기화</AppButton>
-          <AppButton class="flex-1" @click="applyFilter">적용하기</AppButton>
-        </div>
-      </div>
-    </BottomSheet>
 
     <PolicyDetailSheet
       v-model="isPolicyDetailOpen"
