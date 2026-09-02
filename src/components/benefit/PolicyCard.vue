@@ -8,9 +8,9 @@ const props = defineProps({
 
 defineEmits(['detail'])
 
-const provider = computed(() =>
-  props.policy.providerInstitutionName?.includes('서울') ? '서울시' : '정부',
-)
+const provider = computed(() => (
+  props.policy.providerInstitutionName?.includes('서울') ? '서울시' : '정부'
+))
 
 const providerVariant = computed(() => (provider.value === '서울시' ? 'coral' : 'purple'))
 

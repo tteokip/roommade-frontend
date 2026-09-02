@@ -30,9 +30,7 @@ const ageCondition = computed(() => {
 
       <section class="mt-6 rounded-control bg-brand-lavender p-4">
         <h3 class="text-sm font-extrabold text-ink">지원 내용</h3>
-        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-body">
-          {{ policy.supportContent || '지원 내용이 등록되지 않았어요.' }}
-        </p>
+        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-body">{{ policy.supportContent || '지원 내용이 등록되지 않았어요.' }}</p>
       </section>
 
       <dl class="mt-6 divide-y divide-line border-y border-line text-sm">
@@ -46,23 +44,17 @@ const ageCondition = computed(() => {
         </div>
         <div class="flex gap-4 py-4">
           <dt class="w-20 shrink-0 font-bold text-muted">소득 조건</dt>
-          <dd class="font-medium text-body">
-            {{ policy.incomeConditionText || '소득 조건 확인 필요' }}
-          </dd>
+          <dd class="font-medium text-body">{{ policy.incomeConditionText || '소득 조건 확인 필요' }}</dd>
         </div>
       </dl>
 
       <section v-if="policy.qualification" class="mt-6">
         <h3 class="text-sm font-extrabold text-ink">신청 자격</h3>
-        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-body">
-          {{ policy.qualification }}
-        </p>
+        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-body">{{ policy.qualification }}</p>
       </section>
       <section v-if="policy.applicationMethod" class="mt-6">
         <h3 class="text-sm font-extrabold text-ink">신청 방법</h3>
-        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-body">
-          {{ policy.applicationMethod }}
-        </p>
+        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-body">{{ policy.applicationMethod }}</p>
       </section>
       <a
         v-if="policy.applicationUrl"

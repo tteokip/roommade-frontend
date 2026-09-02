@@ -7,13 +7,11 @@ import { NAV_ITEMS } from '@/constants/navigation'
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = computed(() =>
+const activeTab = computed(() => (
   typeof route.meta.tab === 'string'
     ? route.meta.tab
-    : typeof route.name === 'string'
-      ? route.name
-      : '',
-)
+    : typeof route.name === 'string' ? route.name : ''
+))
 
 function goToTab(id) {
   if (id !== route.name) router.push({ name: id })
