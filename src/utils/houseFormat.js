@@ -1,6 +1,5 @@
 const FALLBACK = '정보 없음'
 
-// deposit/monthlyRent/maintenanceFee 는 원 단위 정수로 내려온다 (예: 500만원 → 5000000).
 export function formatWon(amountWon) {
   if (amountWon === null || amountWon === undefined) return FALLBACK
 
@@ -38,4 +37,16 @@ export function formatCommuteRange(minMinutes, maxMinutes) {
 
 export function formatOrFallback(value) {
   return value === null || value === undefined || value === '' ? FALLBACK : value
+}
+
+export function wonToManwonInput(amountWon) {
+  if (amountWon === null || amountWon === undefined) return ''
+  return String(amountWon / 10000)
+}
+
+export function manwonInputToWon(manwonText) {
+  const trimmed = String(manwonText ?? '').trim()
+  if (trimmed === '') return null
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? Math.round(parsed * 10000) : NaN
 }
