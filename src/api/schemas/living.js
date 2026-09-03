@@ -32,7 +32,7 @@ export const challengeLevelSchema = z.object({
 
 export const dailyChallengeSchema = z.object({
   todaySpending: z.number(),
-  currentLevel: challengeLevelSchema,
+  currentLevel: challengeLevelSchema.nullable(),
   levels: z.array(challengeLevelSchema),
 })
 
