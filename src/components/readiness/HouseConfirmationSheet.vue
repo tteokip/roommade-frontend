@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 
+import houseImage from '@/assets/house.png'
 import { AppButton, BottomSheet } from '@/shared/ui'
 import { formatWon } from '@/utils/houseFormat'
 
@@ -186,7 +187,7 @@ function submitConfirmation() {
               : 'border-line'
           "
         >
-          <label class="flex cursor-pointer items-center gap-3">
+          <label class="flex cursor-pointer items-center justify-between gap-3">
             <input
               v-model="selectedValue"
               type="radio"
@@ -196,6 +197,9 @@ function submitConfirmation() {
               :disabled="isConfirming"
               @change="moveInDate = ''"
             />
+            <strong class="text-sm font-extrabold text-ink"
+              >직접 찾아본 다른 집으로 입주 확정하기</strong
+            >
             <span
               class="grid size-6 shrink-0 place-items-center rounded-full border-2"
               :class="selectedValue === 'other' ? 'border-brand-primary' : 'border-muted'"
@@ -203,9 +207,6 @@ function submitConfirmation() {
             >
               <span v-if="selectedValue === 'other'" class="size-3 rounded-full bg-brand-primary" />
             </span>
-            <strong class="text-sm font-extrabold text-ink"
-              >직접 찾아본 다른 집으로 입주 확정하기</strong
-            >
           </label>
 
           <label v-if="selectedValue === 'other'" class="mt-4 block text-xs font-medium text-body">
@@ -223,7 +224,7 @@ function submitConfirmation() {
       </fieldset>
 
       <div class="mt-5 flex items-center gap-4 rounded-control bg-brand-lavender p-4">
-        <span class="shrink-0 text-4xl" aria-hidden="true">🏡</span>
+        <img :src="houseImage" alt="" class="size-12 shrink-0 object-contain" aria-hidden="true" />
         <div class="min-w-0">
           <h3 class="text-base font-extrabold text-ink">입주를 확정할까요?</h3>
           <p class="mt-1 text-xs leading-5 text-body">
