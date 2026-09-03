@@ -1,15 +1,25 @@
 <script setup>
-import { computed } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
-import { getDepositProgress, getRirDiagnosis } from '@/api/preparations'
+import { getCurrentComparison } from '@/api/house'
+import {
+  confirmHouse,
+  getDepositProgress,
+  getHouseComparisonProgress,
+  getRirDiagnosis,
+} from '@/api/preparations'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import DepositProgressCard from '@/components/readiness/DepositProgressCard.vue'
+import HouseConfirmationCard from '@/components/readiness/HouseConfirmationCard.vue'
 import RirDiagnosisCard from '@/components/readiness/RirDiagnosisCard.vue'
 import { AppHeader, EmptyState, ErrorState, LoadingState } from '@/shared/ui'
 
 const router = useRouter()
+const queryClient = useQueryClient()
+const confirmationError = ref('')
+const confirmationVersion = ref(0)
 
 const {
   data: rirDiagnosis,
@@ -21,6 +31,82 @@ const {
   queryKey: ['preparations', 'rir'],
   queryFn: getRirDiagnosis,
   retry: 1,
+})
+
+const {
+  data: houseComparisonProgress,
+  error: houseComparisonError,
+  isError: isHouseComparisonError,
+  isPending: isHouseComparisonPending,
+  refetch: refetchHouseComparisonProgress,
+} = useQuery({
+  queryKey: ['preparations', 'house-comparison'],
+  queryFn: getHouseComparisonProgress,
+  retry: 1,
+})
+
+const {
+  data: currentComparison,
+  error: currentComparisonError,
+  isError: isCurrentComparisonError,
+  isPending: isCurrentComparisonPending,
+  refetch: refetchCurrentComparison,
+} = useQuery({
+  queryKey: ['houseComparisonCurrent'],
+  queryFn: getCurrentComparison,
+  retry: 1,
+})
+
+const registeredHouses = computed(() =>
+  [
+    currentComparison.value?.houseA ? { ...currentComparison.value.houseA, houseType: 'A' } : null,
+    currentComparison.value?.houseB ? { ...currentComparison.value.houseB, houseType: 'B' } : null,
+  ].filter(Boolean),
+)
+
+const confirmHouseMutation = useMutation({
+  mutationFn: confirmHouse,
+  onMutate: () => {
+    confirmationError.value = ''
+  },
+  onSuccess: async (confirmation) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['preparations'] }),
+      queryClient.invalidateQueries({ queryKey: ['houseComparisonCurrent'] }),
+    ])
+    confirmationVersion.value += 1
+
+    if (confirmation.independenceStatus === 'MOVED_IN') {
+      router.push({ name: 'dailyLife', query: { intro: '1' } })
+    }
+  },
+  onError: (error) => {
+    const code = error.response?.data?.code
+
+    if (code === 'HOUSE_019') {
+      refetchCurrentComparison()
+      confirmationError.value = '등록된 매물 정보를 찾지 못했어요. 다시 불러온 뒤 선택해 주세요.'
+      return
+    }
+    if (code === 'PREPARATION_012') {
+      confirmationError.value = '입주할 집을 다시 선택해 주세요.'
+      return
+    }
+    if (code === 'PREPARATION_013') {
+      confirmationError.value = '입주일은 오늘 또는 미래 날짜로 선택해 주세요.'
+      return
+    }
+    if (code === 'PREPARATION_010') {
+      confirmationError.value = '이미 입주를 확정했어요.'
+      return
+    }
+    if (code === 'PREPARATION_009') {
+      confirmationError.value = '자립 준비 정보를 찾지 못했어요.'
+      return
+    }
+
+    confirmationError.value = '입주를 확정하지 못했어요. 잠시 후 다시 시도해 주세요.'
+  },
 })
 
 const {
@@ -50,6 +136,19 @@ const depositErrorDescription = computed(() => {
   if (status === 422) return '목표 보증금과 현재 마련 금액을 확인한 뒤 다시 시도해 주세요.'
   return '잠시 후 다시 시도해 주세요.'
 })
+
+const houseComparisonErrorDescription = computed(() => {
+  const status =
+    houseComparisonError.value?.response?.status ?? currentComparisonError.value?.response?.status
+
+  if (status === 404) return '집 비교 정보를 찾지 못했어요.'
+  return '잠시 후 다시 시도해 주세요.'
+})
+
+function retryHouseConfirmation() {
+  refetchHouseComparisonProgress()
+  refetchCurrentComparison()
+}
 </script>
 
 <template>
@@ -66,7 +165,9 @@ const depositErrorDescription = computed(() => {
           <p class="whitespace-nowrap text-xs text-muted">
             <strong class="text-brand-primary">RIR</strong> {{ rirDiagnosis?.maxScore ?? 45 }}점 ·
             <strong class="text-brand-primary">보증금</strong>
-            {{ depositProgress?.maxScore ?? 45 }}점
+            {{ depositProgress?.maxScore ?? 45 }}점 ·
+            <strong class="text-brand-primary">집 비교</strong>
+            {{ houseComparisonProgress?.maxScore ?? 10 }}점
           </p>
         </header>
 
@@ -102,6 +203,27 @@ const depositErrorDescription = computed(() => {
           >
             <template #icon>💸</template>
           </EmptyState>
+
+          <LoadingState
+            v-if="isHouseComparisonPending || isCurrentComparisonPending"
+            message="집 비교 및 입주 확정 정보를 불러오는 중이에요."
+          />
+          <ErrorState
+            v-else-if="isHouseComparisonError || isCurrentComparisonError"
+            title="집 비교 및 입주 확정 정보를 불러오지 못했어요."
+            :description="houseComparisonErrorDescription"
+            @retry="retryHouseConfirmation"
+          />
+          <HouseConfirmationCard
+            v-else-if="houseComparisonProgress"
+            :key="confirmationVersion"
+            :progress="houseComparisonProgress"
+            :houses="registeredHouses"
+            :is-confirming="confirmHouseMutation.isPending.value"
+            :confirmation-error="confirmationError"
+            @open-confirmation="confirmationError = ''"
+            @confirm="confirmHouseMutation.mutate"
+          />
         </div>
       </main>
     </BottomTabLayout>

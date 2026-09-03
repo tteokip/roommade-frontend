@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { AppHeader, AppButton, AppCard, LoadingState, ErrorState } from '@/shared/ui'
@@ -7,7 +7,10 @@ import { HomeFilledIcon } from '@/shared/ui/icons'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import HouseMiniCard from '@/components/house/HouseMiniCard.vue'
 import HouseComparisonTable from '@/components/house/HouseComparisonTable.vue'
-import { getCurrentComparison } from '@/api/house'
+import HouseBalanceGameBottomSheet from '@/components/house/HouseBalanceGameBottomSheet.vue'
+import HouseBalanceGameSheet from '@/components/house/HouseBalanceGameSheet.vue'
+import HouseBalanceGameSummaryCard from '@/components/house/HouseBalanceGameSummaryCard.vue'
+import { getBalanceGameQuestions, getBalanceGameResult, getCurrentComparison } from '@/api/house'
 
 const router = useRouter()
 
@@ -22,9 +25,23 @@ const houseB = computed(() => data.value?.houseB ?? null)
 const balanceGameAvailable = computed(() => data.value?.balanceGameAvailable ?? false)
 const hasAnyRegistered = computed(() => Boolean(houseA.value || houseB.value))
 
-function goToBalanceGame() {
-  router.push({ name: 'house-balance-game' })
-}
+// 밸런스게임을 이미 완료했다면, 완료 여부와 결과를 미리 조회해 CTA 버튼 대신 결과 요약을 보여준다.
+const { data: balanceGameQuestionsData } = useQuery({
+  queryKey: ['balanceGameQuestions'],
+  queryFn: getBalanceGameQuestions,
+  enabled: balanceGameAvailable,
+  retry: false,
+})
+const isBalanceGameCompleted = computed(() => balanceGameQuestionsData.value?.completed ?? false)
+
+const { data: balanceGameResultData } = useQuery({
+  queryKey: ['balanceGameResult'],
+  queryFn: getBalanceGameResult,
+  enabled: isBalanceGameCompleted,
+  retry: false,
+})
+
+const isBalanceGameOpen = ref(false)
 
 function goToFirstRegister() {
   router.push({ name: 'house-register', params: { houseType: 'A' } })
@@ -47,7 +64,7 @@ function goToFirstRegister() {
 
         <template v-else>
           <template v-if="hasAnyRegistered">
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid min-w-0 grid-cols-2 gap-3">
               <HouseMiniCard house-type="A" :house="houseA" />
               <HouseMiniCard house-type="B" :house="houseB" />
             </div>
@@ -94,11 +111,30 @@ function goToFirstRegister() {
             </AppCard>
           </template>
 
-          <AppButton v-if="balanceGameAvailable" class="mt-6" full-width @click="goToBalanceGame">
-            🔔 고민된다면 밸런스게임 해보기
+          <HouseBalanceGameSummaryCard
+            v-if="balanceGameAvailable && balanceGameResultData"
+            class="mb-6 mt-6"
+            :result="balanceGameResultData"
+            @open="isBalanceGameOpen = true"
+          />
+          <AppButton
+            v-else-if="balanceGameAvailable"
+            class="mt-6"
+            full-width
+            @click="isBalanceGameOpen = true"
+          >
+            고민된다면 밸런스게임 해보기
           </AppButton>
         </template>
       </main>
     </BottomTabLayout>
+
+    <HouseBalanceGameBottomSheet v-model="isBalanceGameOpen">
+      <HouseBalanceGameSheet
+        :house-a="houseA"
+        :house-b="houseB"
+        @close="isBalanceGameOpen = false"
+      />
+    </HouseBalanceGameBottomSheet>
   </div>
 </template>
