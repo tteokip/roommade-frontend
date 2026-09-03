@@ -127,11 +127,11 @@ const guidance = computed(() => ({
 
         <div class="mt-6 flex items-center gap-2 rounded-control bg-brand-lavender px-3 py-4">
           <span class="text-base" aria-hidden="true">💡</span>
-          <p class="whitespace-nowrap text-[clamp(0.625rem,2.7vw,0.75rem)] leading-5 text-body">
+          <p class="whitespace-nowrap text-[clamp(0.6875rem,3vw,0.8125rem)] leading-5 text-body">
             <template v-if="guidance.message">{{ guidance.message }}</template>
             <template v-else>
               {{ '목표까지 '
-              }}<span class="text-xs font-extrabold text-brand-primary">{{
+              }}<span class="text-sm font-extrabold text-brand-primary">{{
                 guidance.remainingDeposit
               }}</span
               >{{ ' 남았어요!' }}

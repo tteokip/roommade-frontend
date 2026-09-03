@@ -213,16 +213,15 @@ function formatAmount(value) {
 
             <div class="mt-6 flex items-center gap-2 rounded-control bg-brand-lavender px-3 py-4">
               <span class="text-base" aria-hidden="true">💡</span>
-              <p
-                class="whitespace-nowrap text-[clamp(0.5625rem,2.55vw,0.6875rem)] leading-5 text-body"
-              >
+              <p class="text-[clamp(0.6875rem,3vw,0.8125rem)] leading-5 text-body">
                 <template v-if="guidance.message">{{ guidance.message }}</template>
                 <template v-else>
                   {{ '월세를 '
-                  }}<span class="text-xs font-extrabold text-brand-primary">{{
+                  }}<span class="text-sm font-extrabold text-brand-primary">{{
                     guidance.reductionAmount
                   }}</span
-                  >{{ ` 낮추면 RIR ${guidance.targetPercent} 이하로 달성할 수 있어요!` }}
+                  >{{ ' 낮추면' }}<br />
+                  {{ `RIR ${guidance.targetPercent} 이하로 달성할 수 있어요!` }}
                 </template>
               </p>
             </div>
