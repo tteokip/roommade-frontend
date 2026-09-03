@@ -39,17 +39,12 @@ const routes = [
     component: () => import('@/views/HouseRegisterView.vue'),
     props: true,
   },
-  // 수정/밸런스게임 화면은 아직 구현 전이라 임시로 준비 중 화면을 연결한다.
+  // 수정 화면은 아직 구현 전이라 임시로 준비 중 화면을 연결한다.
   {
     path: '/house-comparisons/houses/:houseType/edit',
     name: 'house-edit',
     component: () => import('@/views/NotReadyView.vue'),
     props: true,
-  },
-  {
-    path: '/house-comparisons/balance-game',
-    name: 'house-balance-game',
-    component: () => import('@/views/NotReadyView.vue'),
   },
 ]
 

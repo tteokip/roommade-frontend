@@ -77,3 +77,76 @@ export async function registerHouse(houseType, payload) {
   )
   return data.data
 }
+
+const comparisonFactorSchema = z.enum([
+  'DEPOSIT',
+  'MONTHLY_COST',
+  'COMMUTE',
+  'STATION',
+  'AREA',
+  'OPTION',
+])
+
+const balanceGameQuestionSchema = z.object({
+  questionId: z.number(),
+  optionAText: z.string(),
+  optionAFactor: comparisonFactorSchema,
+  optionBText: z.string(),
+  optionBFactor: comparisonFactorSchema,
+  selectedSide: z.enum(['A', 'B']).nullable(),
+})
+
+const balanceGameQuestionsResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.string(),
+  message: z.string(),
+  data: z.object({
+    totalQuestions: z.number(),
+    answeredQuestions: z.number(),
+    completed: z.boolean(),
+    questions: z.array(balanceGameQuestionSchema),
+  }),
+})
+
+export async function getBalanceGameQuestions() {
+  const response = await apiClient.get('/house-comparisons/current/balance-game/questions')
+  return balanceGameQuestionsResponseSchema.parse(response.data).data
+}
+
+const balanceGameProgressResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.string(),
+  message: z.string(),
+  data: z.object({
+    totalQuestions: z.number(),
+    answeredQuestions: z.number(),
+    completed: z.boolean(),
+  }),
+})
+
+export async function submitBalanceGameAnswer(questionId, selectedSide) {
+  const response = await apiClient.put(
+    `/house-comparisons/current/balance-game/answers/${questionId}`,
+    { selectedSide },
+  )
+  return balanceGameProgressResponseSchema.parse(response.data).data
+}
+
+const balanceGameResultResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.string(),
+  message: z.string(),
+  data: z.object({
+    result: z.enum(['A', 'B', 'TIE']),
+    houseAScore: z.number(),
+    houseBScore: z.number(),
+    selectedFactors: z.record(z.string(), z.number()),
+    matchedFactors: z.record(z.string(), z.number()),
+    excludedFactors: z.array(comparisonFactorSchema),
+  }),
+})
+
+export async function getBalanceGameResult() {
+  const response = await apiClient.get('/house-comparisons/current/balance-game/result')
+  return balanceGameResultResponseSchema.parse(response.data).data
+}
