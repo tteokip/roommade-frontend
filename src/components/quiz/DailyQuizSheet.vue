@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { AppButton, BottomSheet, ErrorState, LoadingState } from '@/shared/ui'
+import trophyImage from '@/assets/trophy.png'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -62,7 +63,13 @@ function isOChoice(choice) {
     <ErrorState v-else-if="isError" @retry="$emit('retry')" />
 
     <section v-else-if="result" class="pb-3 pt-4 text-center">
-      <span class="text-7xl" aria-hidden="true">{{ result.correct ? '🏆' : '💡' }}</span>
+      <img
+        v-if="result.correct"
+        :src="trophyImage"
+        alt="정답 트로피"
+        class="mx-auto size-24 object-contain"
+      >
+      <span v-else class="text-7xl" aria-hidden="true">💡</span>
       <p class="mt-5 text-sm font-extrabold tracking-wide text-brand-primary">QUIZ COMPLETE</p>
       <h3 class="mt-3 text-3xl font-black tracking-tight text-ink">
         {{ result.correct ? '정답이에요!' : `정답은 ${result.correctChoiceContent}예요!` }}
