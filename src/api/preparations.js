@@ -38,6 +38,44 @@ const depositProgressResponseSchema = z.object({
   data: depositProgressSchema,
 })
 
+const houseComparisonProgressSchema = z.object({
+  houseComparisonScore: z.number().int().nonnegative(),
+  maxScore: z.number().int().positive(),
+  houseComparisonCompletedAt: z.string().nullable(),
+})
+
+const houseComparisonProgressResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.string(),
+  message: z.string(),
+  data: houseComparisonProgressSchema,
+})
+
+const houseConfirmationRequestSchema = z.discriminatedUnion('confirmationType', [
+  z.object({
+    confirmationType: z.literal('COMPARISON'),
+    houseId: z.number().int().positive(),
+    moveInDate: z.iso.date(),
+  }),
+  z.object({
+    confirmationType: z.literal('OTHER'),
+    moveInDate: z.iso.date(),
+  }),
+])
+
+const houseConfirmationResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.string(),
+  message: z.string(),
+  data: z.object({
+    confirmedHouseId: z.number().int().positive().nullable(),
+    manualRentInputRequired: z.boolean(),
+    moveInDate: z.iso.date(),
+    movedInAt: z.string().nullable(),
+    independenceStatus: z.enum(['MOVE_IN_SCHEDULED', 'MOVED_IN']),
+  }),
+})
+
 export async function getRirDiagnosis() {
   const response = await apiClient.get('/preparations/rir')
 
@@ -48,4 +86,17 @@ export async function getDepositProgress() {
   const response = await apiClient.get('/preparations/deposit')
 
   return depositProgressResponseSchema.parse(response.data).data
+}
+
+export async function getHouseComparisonProgress() {
+  const response = await apiClient.get('/preparations/house-comparison')
+
+  return houseComparisonProgressResponseSchema.parse(response.data).data
+}
+
+export async function confirmHouse(payload) {
+  const validatedPayload = houseConfirmationRequestSchema.parse(payload)
+  const response = await apiClient.post('/move-ins', validatedPayload)
+
+  return houseConfirmationResponseSchema.parse(response.data).data
 }
