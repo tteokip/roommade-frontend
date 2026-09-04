@@ -130,14 +130,16 @@ const timeUntilMidnight = computed(() => {
 })
 
 // 비상금 목표 설정
+const hasSubmittedEmergencyFund = ref(false)
 const isEmergencyFundSheetOpen = ref(false)
 const emergencyFundInput = ref('')
 const setEmergencyFundTarget = useMutation({
   mutationFn: updateEmergencyFundTarget,
   onSuccess: async () => {
+    await queryClient.invalidateQueries({ queryKey: ['emergencyFund'] })
+    hasSubmittedEmergencyFund.value = true
     isEmergencyFundSheetOpen.value = false
     emergencyFundInput.value = ''
-    await queryClient.invalidateQueries({ queryKey: ['emergencyFund'] })
   },
 })
 function submitEmergencyFundTarget() {
@@ -489,42 +491,64 @@ onBeforeUnmount(() => {
                   </svg>
                 </template>
 
-                <div class="mt-4 flex items-start justify-between">
-                  <div class="flex-1">
-                    <template v-if="!emergencyFund.targetAmount">
-                      <p class="mb-1 text-base font-black text-emerald-500">
-                        아직 비상금 목표가 없어요.
-                      </p>
-                      <p class="mb-4.5 text-[13px] text-muted">
-                        독립생활을 위한 목표를 정해보세요.
-                      </p>
-                      <AppButton variant="info" size="sm" @click="isEmergencyFundSheetOpen = true">
-                        비상금 목표 설정하기
-                      </AppButton>
-                    </template>
-                    <template v-else>
-                      <p class="mb-1 text-base font-black text-emerald-500">
-                        {{ emergencyFund.currentAmount.toLocaleString() }}원 /
-                        {{ emergencyFund.targetAmount.toLocaleString() }}원
-                      </p>
-                      <p class="mb-3 text-[13px] text-muted">
-                        {{
-                          emergencyFund.achieved
-                            ? '목표를 달성했어요! 🎉'
-                            : '목표를 향해 모으는 중이에요.'
-                        }}
-                      </p>
-                      <div class="h-2 w-full max-w-xs overflow-hidden rounded-full bg-emerald-100">
-                        <div
-                          class="h-full rounded-full bg-emerald-500"
-                          :style="{ width: `${emergencyFundPercent}%` }"
-                        />
+                <div class="mt-4">
+                  <template v-if="!hasSubmittedEmergencyFund">
+                    <div class="relative">
+                      <div class="min-h-20 pr-24">
+                        <p class="mb-1 text-base font-black text-emerald-500">
+                          아직 비상금 목표가 없어요.
+                        </p>
+                        <p class="text-[13px] text-muted">
+                          독립생활을 위한 목표 금액을 입력해주세요.
+                        </p>
                       </div>
-                    </template>
-                  </div>
-                  <div class="shrink-0">
-                    <PiggyBankIllustration />
-                  </div>
+                      <div class="absolute right-0 top-0">
+                        <PiggyBankIllustration />
+                      </div>
+                      <button
+                        type="button"
+                        class="mt-3 flex min-h-13 w-full items-center gap-3 rounded-control border border-line bg-white py-1.5 pl-4 pr-2 text-left transition-colors hover:border-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/10"
+                        @click="isEmergencyFundSheetOpen = true"
+                      >
+                        <span class="min-w-0 flex-1 text-sm text-muted"
+                          >비상금 목표를 입력해주세요</span
+                        >
+                        <span
+                          class="inline-flex min-h-10 shrink-0 items-center justify-center rounded-pill border border-brand-primary bg-white px-4 text-sm font-bold text-brand-primary"
+                        >
+                          입력하기
+                        </span>
+                      </button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div class="flex items-start justify-between">
+                      <div class="min-w-0 flex-1">
+                        <p class="mb-1 text-base font-black text-emerald-500">
+                          {{ emergencyFund.currentAmount.toLocaleString() }}원 /
+                          {{ emergencyFund.targetAmount.toLocaleString() }}원
+                        </p>
+                        <p class="mb-3 text-[13px] text-muted">
+                          {{
+                            emergencyFund.achieved
+                              ? '목표를 달성했어요! 🎉'
+                              : '목표를 향해 모으는 중이에요.'
+                          }}
+                        </p>
+                        <div
+                          class="h-2 w-full max-w-xs overflow-hidden rounded-full bg-emerald-100"
+                        >
+                          <div
+                            class="h-full rounded-full bg-emerald-500"
+                            :style="{ width: `${emergencyFundPercent}%` }"
+                          />
+                        </div>
+                      </div>
+                      <div class="shrink-0">
+                        <PiggyBankIllustration />
+                      </div>
+                    </div>
+                  </template>
                 </div>
               </AccordionItem>
             </AppCard>
