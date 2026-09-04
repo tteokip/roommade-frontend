@@ -15,6 +15,7 @@ import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import DepositProgressCard from '@/components/readiness/DepositProgressCard.vue'
 import HouseConfirmationCard from '@/components/readiness/HouseConfirmationCard.vue'
 import MoveInScheduledPanel from '@/components/readiness/MoveInScheduledPanel.vue'
+import ReadinessSummaryCard from '@/components/readiness/ReadinessSummaryCard.vue'
 import RirDiagnosisCard from '@/components/readiness/RirDiagnosisCard.vue'
 import { AppHeader, EmptyState, ErrorState, LoadingState } from '@/shared/ui'
 
@@ -215,22 +216,9 @@ function retryHouseConfirmation() {
         />
 
         <template v-else-if="isPreparing">
-          <header class="mb-5 flex items-end justify-between gap-3">
-            <div>
-              <p class="text-sm font-bold text-brand-primary">내 자립 준비도</p>
-              <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-ink">항목별 진단</h2>
-            </div>
-            <p class="whitespace-nowrap text-xs text-muted">
-              <strong class="text-brand-primary">RIR</strong>
-              {{ rirDiagnosis?.maxScore ?? 45 }}점 ·
-              <strong class="text-brand-primary">보증금</strong>
-              {{ depositProgress?.maxScore ?? 45 }}점 ·
-              <strong class="text-brand-primary">집 비교</strong>
-              {{ houseComparisonProgress?.maxScore ?? 10 }}점
-            </p>
-          </header>
+          <ReadinessSummaryCard :diagnosis="readinessDiagnosis" />
 
-          <div class="space-y-4">
+          <div class="mt-5 space-y-4">
             <LoadingState v-if="isRirPending" message="RIR 진단 결과를 불러오는 중이에요." />
             <ErrorState
               v-else-if="isRirError"
