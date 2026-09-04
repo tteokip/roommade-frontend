@@ -9,8 +9,11 @@ import PiggyBankIllustration from '@/components/daily-life/PiggyBankIllustration
 import StarRow from '@/components/daily-life/StarRow.vue'
 import CoinBadge from '@/components/daily-life/CoinBadge.vue'
 import AccordionItem from '@/components/daily-life/AccordionItem.vue'
+import RentInputSheet from '@/components/daily-life/RentInputSheet.vue'
 import SpendingSummaryCard from '@/components/daily-life/SpendingSummaryCard.vue'
+import RirDiagnosisCard from '@/components/readiness/RirDiagnosisCard.vue'
 import dailyChallengeGoalIcon from '@/assets/daily-challenge-goal.png'
+import houseIllustration from '@/assets/house.png'
 import {
   fetchDailyChallenge,
   fetchDailyLivingCost,
@@ -151,14 +154,16 @@ const emergencyFundPercent = computed(() => {
 })
 
 // 월세 입력 → RIR 진단
-const showRentForm = ref(false)
+const hasSubmittedRent = ref(false)
+const isRentSheetOpen = ref(false)
 const rentInput = ref('')
 const setMonthlyRent = useMutation({
   mutationFn: updateMonthlyRent,
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['rirDiagnosis'] })
-    showRentForm.value = false
+  onSuccess: async () => {
+    hasSubmittedRent.value = true
+    isRentSheetOpen.value = false
     rentInput.value = ''
+    await refetchRir()
   },
 })
 function submitMonthlyRent() {
@@ -166,34 +171,6 @@ function submitMonthlyRent() {
   if (!amount || amount <= 0) return
   setMonthlyRent.mutate(amount)
 }
-const RIR_STATUS = {
-  NORMAL: { label: '양호', badgeClass: 'bg-emerald-100 text-emerald-700' },
-  EXCESSIVE: { label: '주의', badgeClass: 'bg-amber-100 text-amber-700' },
-  SEVERE: { label: '위험', badgeClass: 'bg-red-100 text-red-700' },
-}
-const rirStatusLabel = computed(() => {
-  const status = rirDiagnosis.value?.diagnosis?.status
-  return status ? (RIR_STATUS[status]?.label ?? status) : ''
-})
-const rirBadgeClass = computed(() => {
-  const status = rirDiagnosis.value?.diagnosis?.status
-  return RIR_STATUS[status]?.badgeClass ?? 'bg-gray-100 text-muted'
-})
-const showRirDetail = ref(false)
-
-function toManwon(amount) {
-  return Math.round(amount / 10000).toLocaleString()
-}
-const rirExpectedRentManwon = computed(() =>
-  toManwon(rirDiagnosis.value?.diagnosis?.expectedMonthlyRent ?? 0),
-)
-const rirRequiredReductionManwon = computed(() =>
-  toManwon(rirDiagnosis.value?.diagnosis?.requiredRentReduction ?? 0),
-)
-const rirMonthlyIncomeManwon = computed(() =>
-  toManwon(rirDiagnosis.value?.diagnosis?.monthlyIncome ?? 0),
-)
-
 // 독립진단(readiness) 페이지에서 "독립 전 → 독립 후"로 넘어올 때 ?intro=1 로 진입하면
 // 스포트라이트 2단계 소개를 보여준다. 그 외에는 바로 일반 화면으로 보여준다.
 const spendingCardEl = ref(null)
@@ -573,10 +550,10 @@ onBeforeUnmount(() => {
               </AccordionItem>
             </AppCard>
 
-            <AppCard v-if="!rirDiagnosis || rirDiagnosis.state !== 'ready'">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <div class="mb-3 flex items-center gap-2.5">
+            <AppCard v-if="!hasSubmittedRent || rirDiagnosis?.state !== 'ready'" padding="sm">
+              <AccordionItem default-open>
+                <template #trigger="{ open }">
+                  <div class="flex items-center gap-2.5">
                     <div class="flex size-9 items-center justify-center rounded-[10px] bg-cyan-50">
                       <svg
                         width="18"
@@ -594,166 +571,71 @@ onBeforeUnmount(() => {
                     </div>
                     <span class="text-[15px] font-extrabold text-ink">월세 RIR</span>
                   </div>
-
-                  <p v-if="!rirDiagnosis" class="text-sm text-muted">불러오는 중...</p>
-                  <template v-else-if="rirDiagnosis.state === 'rent_not_set'">
-                    <p class="mb-1 text-base font-black text-ink">아직 없어요.</p>
-                    <p class="mb-4.5 text-[13px] text-muted">
-                      내 수준에 맞는 RIR 확인해보고 싶으면 월세를 입력하세요.
-                    </p>
-                    <AppButton
-                      v-if="!showRentForm"
-                      variant="info"
-                      size="sm"
-                      @click="showRentForm = true"
-                    >
-                      월세 입력하기
-                    </AppButton>
-                    <div v-else class="flex max-w-xs items-end gap-2">
-                      <AppInput
-                        v-model="rentInput"
-                        type="number"
-                        min="1"
-                        placeholder="예: 500000"
-                        hint="월세를 원 단위로 입력해주세요"
-                      />
-                      <AppButton
-                        size="sm"
-                        :disabled="setMonthlyRent.isPending.value"
-                        @click="submitMonthlyRent"
-                        >저장</AppButton
-                      >
-                    </div>
-                  </template>
-                  <template v-else-if="rirDiagnosis.state === 'income_missing'">
-                    <p class="mb-1 text-base font-black text-ink">월 소득 정보가 필요해요.</p>
-                    <p class="text-[13px] text-muted">
-                      독립진단에서 월 소득을 먼저 입력하면 RIR을 계산해드려요.
-                    </p>
-                  </template>
-                </div>
-                <div class="shrink-0">
-                  <svg width="64" height="64" viewBox="0 0 72 72" fill="none">
-                    <path
-                      d="M22 30c0-8 6-14 14-14s14 6 14 14v2c8 1 12 8 12 18 0 12-10 18-26 18S10 62 10 50c0-10 4-17 12-18z"
-                      fill="#6ee7b7"
-                    />
-                    <path
-                      d="M22 32c0-8 6-14 14-14s14 6 14 14"
-                      stroke="#059669"
-                      stroke-width="2"
-                      fill="none"
-                      stroke-linecap="round"
-                    />
-                    <circle
-                      cx="36"
-                      cy="42"
-                      r="11"
-                      fill="#34d399"
-                      stroke="#059669"
-                      stroke-width="1.5"
-                    />
-                    <text
-                      x="36"
-                      y="47"
-                      text-anchor="middle"
-                      font-size="13"
-                      font-weight="900"
-                      fill="white"
-                    >
-                      ₩
-                    </text>
-                  </svg>
-                </div>
-              </div>
-            </AppCard>
-
-            <!-- RIR 계산이 끝나면 독립진단 페이지 스타일(접기/펼치기)로 보여준다 -->
-            <AppCard v-else padding="sm">
-              <button
-                type="button"
-                class="flex w-full items-center justify-between gap-3 text-left"
-                @click="showRirDetail = !showRirDetail"
-              >
-                <div class="flex items-center gap-2.5">
-                  <div
-                    class="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-violet-100"
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#7c3aed"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="9" />
-                      <circle cx="12" cy="12" r="5.5" />
-                      <circle cx="12" cy="12" r="2" fill="#7c3aed" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div class="flex items-center gap-1">
-                      <span class="text-[15px] font-extrabold text-ink">월세 부담 RIR</span>
-                      <span
-                        class="flex size-4 items-center justify-center rounded-full border border-line text-[10px] text-muted"
-                        >ⓘ</span
-                      >
-                    </div>
-                    <p class="text-[11px] text-muted">
-                      월세 {{ rirExpectedRentManwon }}만원 · 소득 대비
-                      {{ rirDiagnosis.diagnosis.rirPercent }}%
-                    </p>
-                  </div>
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
-                  <span
-                    class="rounded-full px-2.5 py-0.5 text-xs font-bold"
-                    :class="rirBadgeClass"
-                    >{{ rirStatusLabel }}</span
-                  >
-                  <span class="text-sm font-black text-ink">
-                    {{ rirDiagnosis.diagnosis.score
-                    }}<span class="text-xs font-normal text-muted"
-                      >/{{ rirDiagnosis.diagnosis.maxScore }}점</span
-                    >
-                  </span>
                   <svg
-                    width="16"
-                    height="16"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="#9ca3af"
                     stroke-width="2.5"
                     class="shrink-0 transition-transform"
-                    :class="showRirDetail ? 'rotate-180' : ''"
+                    :class="open ? 'rotate-180' : ''"
                   >
                     <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
-                </div>
-              </button>
+                </template>
 
-              <div
-                v-if="showRirDetail"
-                class="mt-3 border-t border-gray-100 pt-3 text-[13px] leading-relaxed text-body"
-              >
-                <p v-if="rirDiagnosis.diagnosis.requiredRentReduction > 0">
-                  목표 RIR {{ rirDiagnosis.diagnosis.targetRirPercent }}% 이하까지 월세를
-                  <strong class="text-brand-primary">{{ rirRequiredReductionManwon }}만원</strong>
-                  낮추면 만점이에요.
-                </p>
-                <p v-else class="font-bold text-brand-primary">
-                  목표 RIR {{ rirDiagnosis.diagnosis.targetRirPercent }}% 이하를 달성했어요!
-                </p>
-                <p class="mt-1 text-muted">
-                  월 소득 {{ rirMonthlyIncomeManwon }}만원 기준으로 계산했어요.
-                </p>
-              </div>
+                <div class="relative mt-3">
+                  <img
+                    :src="houseIllustration"
+                    alt=""
+                    class="absolute right-0 top-0 size-16 object-contain"
+                    aria-hidden="true"
+                  />
+
+                  <div class="min-h-16 pr-20">
+                    <p class="mb-1 text-base font-black text-ink">월세 정보를 입력해주세요.</p>
+                    <p class="text-[13px] text-muted">
+                      입력한 월세로 소득 대비 주거비 부담을 계산해드려요.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    class="mt-3 flex min-h-13 w-full items-center gap-3 rounded-control border border-line bg-white py-1.5 pl-4 pr-2 text-left transition-colors hover:border-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/10"
+                    @click="isRentSheetOpen = true"
+                  >
+                    <span class="min-w-0 flex-1 text-sm text-muted">내 월세를 입력해주세요</span>
+                    <span
+                      class="inline-flex min-h-10 shrink-0 items-center justify-center rounded-pill border border-brand-primary bg-white px-4 text-sm font-bold text-brand-primary"
+                    >
+                      입력하기
+                    </span>
+                  </button>
+                  <p
+                    v-if="rirDiagnosis?.state === 'income_missing' && hasSubmittedRent"
+                    class="mt-2 text-xs font-medium text-danger"
+                  >
+                    RIR 계산을 위해 독립진단에서 월 소득을 먼저 입력해주세요.
+                  </p>
+                </div>
+              </AccordionItem>
             </AppCard>
+
+            <RirDiagnosisCard
+              v-if="hasSubmittedRent && rirDiagnosis?.state === 'ready'"
+              :diagnosis="rirDiagnosis.diagnosis"
+            />
           </div>
         </template>
       </main>
     </BottomTabLayout>
+
+    <RentInputSheet
+      v-model="isRentSheetOpen"
+      v-model:amount="rentInput"
+      :loading="setMonthlyRent.isPending.value"
+      @confirm="submitMonthlyRent"
+    />
 
     <div
       v-if="introStep !== null && spotlightRect"

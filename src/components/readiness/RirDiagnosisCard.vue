@@ -34,7 +34,6 @@ const targetGap = computed(() =>
 )
 
 const displayTargetGap = computed(() => Math.ceil(targetGap.value))
-const displayScore = computed(() => Math.round(props.diagnosis.score))
 const displayRirPercent = computed(() => Math.round(props.diagnosis.rirPercent))
 
 const headline = computed(() => {
@@ -57,9 +56,15 @@ const headline = computed(() => {
   }
 })
 
+const markerPercent = computed(() => Math.min(Math.max(props.diagnosis.achievementRate, 0), 88))
 const markerStyle = computed(() => ({
-  left: `${Math.min(Math.max(props.diagnosis.achievementRate, 0), 100)}%`,
+  left: `${markerPercent.value}%`,
 }))
+const markerLabelClass = computed(() => {
+  if (markerPercent.value >= 80) return '-translate-x-full'
+  if (markerPercent.value <= 20) return 'translate-x-0'
+  return '-translate-x-1/2'
+})
 
 const guidance = computed(() => {
   if (props.diagnosis.requiredRentReduction === 0) {
@@ -138,18 +143,12 @@ function formatAmount(value) {
         </span>
         <button
           type="button"
-          class="flex shrink-0 items-center gap-3 rounded-control text-right outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+          class="flex shrink-0 items-center rounded-control text-right outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
           :aria-expanded="isExpanded"
           aria-controls="rir-diagnosis-details"
           :aria-label="isExpanded ? 'RIR 진단 접기' : 'RIR 진단 펼치기'"
           @click="isExpanded = !isExpanded"
         >
-          <span>
-            <span class="text-sm font-extrabold text-brand-primary">
-              {{ displayScore }}
-            </span>
-            <span class="ml-1 text-sm font-medium text-muted">/{{ diagnosis.maxScore }}점</span>
-          </span>
           <svg
             viewBox="0 0 24 24"
             class="size-5 shrink-0 text-muted transition-transform"
@@ -189,7 +188,8 @@ function formatAmount(value) {
                 {{ headline.endText }}
               </span>
               <span
-                class="absolute bottom-[calc(100%+0.5rem)] -translate-x-1/2 whitespace-nowrap rounded-pill bg-white px-3 py-1 text-xs font-extrabold text-ink shadow-card ring-1 ring-line"
+                class="absolute bottom-[calc(100%+0.5rem)] whitespace-nowrap rounded-pill bg-white px-3 py-1 text-xs font-extrabold text-ink shadow-card ring-1 ring-line"
+                :class="markerLabelClass"
                 :style="markerStyle"
               >
                 현재 {{ formatNumber(displayRirPercent) }}%
