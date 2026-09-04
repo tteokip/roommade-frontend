@@ -6,17 +6,21 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   amount: { type: String, default: '' },
   loading: { type: Boolean, default: false },
+  title: { type: String, default: '월세 입력하기' },
+  description: { type: String, default: '실제 월세 금액을 입력해주세요.' },
+  presets: {
+    type: Array,
+    default: () => [
+      { label: '20만원', amount: 200000 },
+      { label: '30만원', amount: 300000 },
+      { label: '50만원', amount: 500000 },
+    ],
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:amount', 'confirm'])
 
 const numberKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
-const presets = [
-  { label: '20만원', amount: 200000 },
-  { label: '30만원', amount: 300000 },
-  { label: '50만원', amount: 500000 },
-]
-
 const numericAmount = computed(() => Number(props.amount) || 0)
 const formattedAmount = computed(() => numericAmount.value.toLocaleString())
 
@@ -40,11 +44,11 @@ function deleteDigit() {
 
 <template>
   <BottomSheet
-    title="월세 입력하기"
+    :title="title"
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <p class="mb-4 text-sm text-muted">실제 월세 금액을 입력해주세요.</p>
+    <p class="mb-4 text-sm text-muted">{{ description }}</p>
 
     <div
       class="flex min-h-14 items-center rounded-control border border-line bg-white px-4 text-ink"

@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { AppButton, AppCard, AppHeader, AppInput, ErrorState, LoadingState } from '@/shared/ui'
+import { AppButton, AppCard, AppHeader, ErrorState, LoadingState } from '@/shared/ui'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import GiftBoxIllustration from '@/components/daily-life/GiftBoxIllustration.vue'
 import PiggyBankIllustration from '@/components/daily-life/PiggyBankIllustration.vue'
@@ -130,14 +130,14 @@ const timeUntilMidnight = computed(() => {
 })
 
 // 비상금 목표 설정
-const showEmergencyFundForm = ref(false)
+const isEmergencyFundSheetOpen = ref(false)
 const emergencyFundInput = ref('')
 const setEmergencyFundTarget = useMutation({
   mutationFn: updateEmergencyFundTarget,
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['emergencyFund'] })
-    showEmergencyFundForm.value = false
+  onSuccess: async () => {
+    isEmergencyFundSheetOpen.value = false
     emergencyFundInput.value = ''
+    await queryClient.invalidateQueries({ queryKey: ['emergencyFund'] })
   },
 })
 function submitEmergencyFundTarget() {
@@ -498,30 +498,9 @@ onBeforeUnmount(() => {
                       <p class="mb-4.5 text-[13px] text-muted">
                         독립생활을 위한 목표를 정해보세요.
                       </p>
-                      <AppButton
-                        v-if="!showEmergencyFundForm"
-                        variant="info"
-                        size="sm"
-                        @click="showEmergencyFundForm = true"
-                      >
+                      <AppButton variant="info" size="sm" @click="isEmergencyFundSheetOpen = true">
                         비상금 목표 설정하기
                       </AppButton>
-                      <div v-else class="flex max-w-xs items-end gap-2">
-                        <AppInput
-                          v-model="emergencyFundInput"
-                          type="number"
-                          min="1"
-                          placeholder="예: 1000000"
-                          hint="목표 금액을 원 단위로 입력해주세요"
-                        />
-                        <AppButton
-                          size="sm"
-                          :disabled="setEmergencyFundTarget.isPending.value"
-                          @click="submitEmergencyFundTarget"
-                        >
-                          저장
-                        </AppButton>
-                      </div>
                     </template>
                     <template v-else>
                       <p class="mb-1 text-base font-black text-emerald-500">
@@ -629,6 +608,20 @@ onBeforeUnmount(() => {
         </template>
       </main>
     </BottomTabLayout>
+
+    <RentInputSheet
+      v-model="isEmergencyFundSheetOpen"
+      v-model:amount="emergencyFundInput"
+      title="비상금 목표 입력하기"
+      description="목표로 모을 비상금 금액을 입력해주세요."
+      :presets="[
+        { label: '100만원', amount: 1000000 },
+        { label: '300만원', amount: 3000000 },
+        { label: '500만원', amount: 5000000 },
+      ]"
+      :loading="setEmergencyFundTarget.isPending.value"
+      @confirm="submitEmergencyFundTarget"
+    />
 
     <RentInputSheet
       v-model="isRentSheetOpen"
