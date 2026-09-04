@@ -615,9 +615,9 @@ onBeforeUnmount(() => {
       title="비상금 목표 입력하기"
       description="목표로 모을 비상금 금액을 입력해주세요."
       :presets="[
-        { label: '100만원', amount: 1000000 },
-        { label: '300만원', amount: 3000000 },
-        { label: '500만원', amount: 5000000 },
+        { label: '1만원', amount: 10000 },
+        { label: '10만원', amount: 100000 },
+        { label: '50만원', amount: 500000 },
       ]"
       :loading="setEmergencyFundTarget.isPending.value"
       @confirm="submitEmergencyFundTarget"
