@@ -11,8 +11,8 @@ const props = defineProps({
   presets: {
     type: Array,
     default: () => [
-      { label: '20만원', amount: 200000 },
-      { label: '30만원', amount: 300000 },
+      { label: '1만원', amount: 10000 },
+      { label: '10만원', amount: 100000 },
       { label: '50만원', amount: 500000 },
     ],
   },
