@@ -56,15 +56,13 @@ const headline = computed(() => {
   }
 })
 
-const markerPercent = computed(() => Math.min(Math.max(props.diagnosis.achievementRate, 0), 88))
+const markerPercent = computed(() => Math.min(Math.max(props.diagnosis.achievementRate, 0), 100))
 const markerStyle = computed(() => ({
   left: `${markerPercent.value}%`,
 }))
-const markerLabelClass = computed(() => {
-  if (markerPercent.value >= 80) return '-translate-x-full'
-  if (markerPercent.value <= 20) return 'translate-x-0'
-  return '-translate-x-1/2'
-})
+const markerLabelStyle = computed(() => ({
+  left: `clamp(3rem, ${markerPercent.value}%, calc(100% - 2rem))`,
+}))
 
 const guidance = computed(() => {
   if (props.diagnosis.requiredRentReduction === 0) {
@@ -188,9 +186,8 @@ function formatAmount(value) {
                 {{ headline.endText }}
               </span>
               <span
-                class="absolute bottom-[calc(100%+0.5rem)] whitespace-nowrap rounded-pill bg-white px-3 py-1 text-xs font-extrabold text-ink shadow-card ring-1 ring-line"
-                :class="markerLabelClass"
-                :style="markerStyle"
+                class="absolute bottom-[calc(100%+0.5rem)] -translate-x-1/2 whitespace-nowrap rounded-pill bg-white px-3 py-1 text-xs font-extrabold text-ink shadow-card ring-1 ring-line"
+                :style="markerLabelStyle"
               >
                 현재 {{ formatNumber(displayRirPercent) }}%
               </span>
