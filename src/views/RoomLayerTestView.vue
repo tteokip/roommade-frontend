@@ -9,17 +9,15 @@ const furnitureOptions = [
   { key: 'desk', label: '책상' },
   { key: 'chair', label: '의자' },
   { key: 'closet', label: '옷장' },
-  { key: 'rug', label: '러그' },
   { key: 'lamp', label: '조명' },
   { key: 'plant', label: '화분' },
-  { key: 'mirror', label: '거울' },
   { key: 'window', label: '창문' },
 ]
 
 const presets = [
   { key: 'empty', label: '빈 방', furniture: [] },
   { key: 'bed', label: '침대만', furniture: ['bed'] },
-  { key: 'bedroom', label: '침실', furniture: ['rug', 'bed', 'lamp', 'plant'] },
+  { key: 'bedroom', label: '침실', furniture: ['bed', 'lamp', 'plant'] },
   { key: 'workspace', label: '작업 공간', furniture: ['window', 'desk', 'chair', 'plant'] },
   {
     key: 'all',
