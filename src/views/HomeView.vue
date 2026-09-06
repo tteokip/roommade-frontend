@@ -48,7 +48,7 @@ async function submitQuiz(selectedChoiceId) {
   <div class="min-h-screen bg-page">
     <BottomTabLayout>
       <main class="mx-auto flex min-h-[calc(100vh-75px)] max-w-md flex-col gap-5 px-4 pb-6 pt-6">
-        <header class="py-2 text-center">
+        <header class="py-2 pl-[5.2%] text-left">
           <h1 class="text-4xl font-black tracking-[-0.06em] text-ink">룸메이드</h1>
         </header>
 
@@ -73,20 +73,13 @@ async function submitQuiz(selectedChoiceId) {
             </svg>
           </button>
 
-          <div class="mt-4 grid grid-cols-[1.35fr_1fr] gap-3 px-2">
+          <div class="mt-4 grid grid-cols-2 gap-3 px-2">
             <button
               type="button"
-              class="flex min-h-14 items-center justify-center gap-3 rounded-pill bg-gradient-to-r from-[#8b3cff] to-brand-primary-dark px-5 text-base font-extrabold text-white shadow-floating transition-transform active:scale-[0.98]"
+              class="flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-base font-extrabold text-body shadow-card transition-transform active:scale-[0.98]"
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                class="size-6 fill-none stroke-current"
-                stroke-width="2"
-              >
-                <path d="M7 4v16M17 4v16M7 7h10v7H7M9 14v6M15 14v6" />
-              </svg>
-              <span>내 방 꾸미기</span>
+              <span class="text-2xl" aria-hidden="true">🎨</span>
+              <span>방 꾸미기</span>
             </button>
 
             <button
