@@ -12,6 +12,11 @@ const routes = [
     component: () => import('@/views/ReadinessView.vue'),
   },
   {
+    path: '/room/decorate',
+    name: 'room-decorate',
+    component: () => import('@/views/RoomDecorateView.vue'),
+  },
+  {
     path: '/house-comparisons',
     name: 'house-comparison',
     component: () => import('@/views/HouseComparisonView.vue'),
