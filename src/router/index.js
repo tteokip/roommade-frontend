@@ -54,6 +54,12 @@ if (import.meta.env.DEV) {
     name: 'ui-preview',
     component: () => import('@/views/UiPreviewView.vue'),
   })
+
+  routes.push({
+    path: '/room-layer-test',
+    name: 'room-layer-test',
+    component: () => import('@/views/RoomLayerTestView.vue'),
+  })
 }
 
 const router = createRouter({
