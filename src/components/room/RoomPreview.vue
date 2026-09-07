@@ -1,14 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 
-import bedImage from '@/assets/room-layer/bed-layer-v4.png'
-import chairImage from '@/assets/room-layer/chair-layer.png'
-import closetImage from '@/assets/room-layer/closet-layer.png'
-import deskImage from '@/assets/room-layer/desk-layer.png'
-import lampImage from '@/assets/room-layer/lamp-layer.png'
-import plantImage from '@/assets/room-layer/pot-layer.png'
 import roomImage from '@/assets/room-layer/empty_room.png'
-import windowImage from '@/assets/room-layer/window-layer.png'
+import { ROOM_LAYER_DEFINITIONS, resolveRoomLayer } from '@/constants/room'
 
 const props = defineProps({
   furniture: {
@@ -17,21 +11,23 @@ const props = defineProps({
   },
 })
 
-const layers = [
-  { key: 'window', label: '창문', src: windowImage },
-  { key: 'closet', label: '옷장', src: closetImage },
-  { key: 'bed', label: '침대', src: bedImage },
-  { key: 'desk', label: '책상', src: deskImage },
-  { key: 'chair', label: '의자', src: chairImage },
-  { key: 'lamp', label: '조명', src: lampImage },
-  { key: 'plant', label: '화분', src: plantImage },
-]
+const visibleLayers = computed(() => {
+  const selectedLayers = new Map()
 
-const selectedFurniture = computed(() => new Set(props.furniture))
+  props.furniture.forEach((furniture) => {
+    if (typeof furniture === 'object' && furniture.placed === false) return
 
-const visibleLayers = computed(() =>
-  layers.filter((layer) => selectedFurniture.value.has(layer.key)),
-)
+    const layer = resolveRoomLayer(furniture)
+    if (layer) selectedLayers.set(layer.key, layer)
+  })
+
+  return ROOM_LAYER_DEFINITIONS.map((definition) => selectedLayers.get(definition.key)).filter(
+    Boolean,
+  )
+})
+
+const selectedFurniture = computed(() => new Set(visibleLayers.value.map((layer) => layer.key)))
+const chairLayer = computed(() => visibleLayers.value.find((layer) => layer.key === 'chair'))
 
 const roomDescription = computed(() => {
   const labels = visibleLayers.value.map((layer) => layer.label)
@@ -62,9 +58,9 @@ const roomDescription = computed(() => {
         aria-hidden="true"
       />
       <img
-        v-if="selectedFurniture.has('chair')"
+        v-if="chairLayer"
         key="chair-floor-shadow"
-        :src="chairImage"
+        :src="chairLayer.src"
         class="chair-leg-shadow"
         aria-hidden="true"
         alt=""
@@ -73,7 +69,7 @@ const roomDescription = computed(() => {
 
       <img
         v-for="layer in visibleLayers"
-        :key="layer.key"
+        :key="layer.furnitureId ?? layer.key"
         :src="layer.src"
         alt=""
         aria-hidden="true"
