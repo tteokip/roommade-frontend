@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { coinBalanceQueryKey, getCoinBalance } from '@/api/coin'
 import {
+  claimFurnitureReward,
   furnitureRewardsQueryKey,
   getFurnitureRewards,
   getRoom,
@@ -33,20 +34,20 @@ const {
   queryFn: getCoinBalance,
 })
 
-// 선택권으로 카테고리를 해금하는 실제 연동은 다른 담당자가 작업 중이라 아직 없다.
-// 그동안 화면이 비어 보이지 않도록 예전 목업과 같은 방식(로컬 상태만 변경)으로 해금 버튼/모달을 유지한다.
-const { data: furnitureRewards } = useQuery({
+const {
+  data: furnitureRewards,
+  isPending: isFurnitureRewardsPending,
+  isError: isFurnitureRewardsError,
+  refetch: refetchFurnitureRewards,
+} = useQuery({
   queryKey: furnitureRewardsQueryKey,
   queryFn: getFurnitureRewards,
 })
-const mockTicketsUsed = ref(0)
-const ticketCount = computed(() =>
-  Math.max((furnitureRewards.value?.length ?? 0) - mockTicketsUsed.value, 0),
-)
-const unlockedCategoryKeys = ref([])
+const ticketCount = computed(() => furnitureRewards.value?.length ?? 0)
 const unlockedCategory = ref(null)
 const purchasedItem = ref(null)
 const purchaseErrorMessage = ref('')
+const rewardClaimErrorMessage = ref('')
 
 const {
   data: shopFurniture,
@@ -75,16 +76,70 @@ const categoryUnlockedFlags = computed(() => {
 })
 
 function isCategoryUnlocked(categoryKey) {
-  return (
-    Boolean(categoryUnlockedFlags.value.get(categoryKey)) ||
-    unlockedCategoryKeys.value.includes(categoryKey)
-  )
+  return Boolean(categoryUnlockedFlags.value.get(categoryKey))
 }
+
+// 같은 가구를 여러 단계의 선택권으로 고를 수 있다면 가장 낮은 단계의 선택권을 먼저 사용한다.
+// 그래야 높은 단계에서 새로 열린 가구를 선택할 수 있는 선택권을 최대한 보존할 수 있다.
+const rewardClaimOptionsByCategory = computed(() => {
+  const options = new Map()
+  const rewards = [...(furnitureRewards.value ?? [])].sort(
+    (left, right) => left.rewardStage - right.rewardStage || left.rewardId - right.rewardId,
+  )
+
+  rewards.forEach((reward) => {
+    reward.choices.forEach((choice) => {
+      const layer = resolveRoomLayer(choice)
+      if (!layer || options.has(layer.key)) return
+
+      options.set(layer.key, {
+        rewardId: reward.rewardId,
+        rewardStage: reward.rewardStage,
+        furniture: choice,
+      })
+    })
+  })
+
+  return options
+})
+
+const rewardClaimMutation = useMutation({
+  mutationFn: ({ rewardId, furnitureId }) => claimFurnitureReward(rewardId, furnitureId),
+  onMutate: () => {
+    rewardClaimErrorMessage.value = ''
+    purchaseErrorMessage.value = ''
+  },
+  onSuccess: (claimedFurniture, variables) => {
+    queryClient.setQueryData(furnitureRewardsQueryKey, (currentRewards) =>
+      (currentRewards ?? []).filter((reward) => reward.rewardId !== variables.rewardId),
+    )
+    queryClient.invalidateQueries({ queryKey: furnitureRewardsQueryKey })
+    queryClient.invalidateQueries({ queryKey: roomQueryKey })
+    queryClient.invalidateQueries({ queryKey: shopFurnitureQueryKey() })
+
+    const layer = resolveRoomLayer(claimedFurniture)
+    unlockedCategory.value = {
+      name: claimedFurniture.categoryName,
+      itemName: layer?.name ?? claimedFurniture.name,
+      thumbnail: layer?.thumbnailSrc,
+    }
+  },
+  onError: (error) => {
+    const code = error.response?.data?.code
+    rewardClaimErrorMessage.value =
+      {
+        ROOM_006: '이미 사용했거나 사용할 수 없는 가구 선택권이에요.',
+        ROOM_007: '이 선택권으로는 해당 기본 가구를 해금할 수 없어요.',
+      }[code] ?? '기본 가구를 해금하지 못했어요. 잠시 후 다시 시도해 주세요.'
+    queryClient.invalidateQueries({ queryKey: furnitureRewardsQueryKey })
+  },
+})
 
 const purchaseMutation = useMutation({
   mutationFn: ({ furnitureId }) => purchaseFurniture(furnitureId),
   onMutate: () => {
     purchaseErrorMessage.value = ''
+    rewardClaimErrorMessage.value = ''
   },
   onSuccess: (purchased, variables) => {
     queryClient.invalidateQueries({ queryKey: shopFurnitureQueryKey() })
@@ -110,7 +165,12 @@ const purchaseMutation = useMutation({
   },
 })
 
-const pendingFurnitureId = computed(() => purchaseMutation.variables.value?.furnitureId ?? null)
+const pendingFurnitureId = computed(() =>
+  purchaseMutation.isPending.value ? (purchaseMutation.variables.value?.furnitureId ?? null) : null,
+)
+const shopActionErrorMessage = computed(
+  () => rewardClaimErrorMessage.value || purchaseErrorMessage.value,
+)
 
 // 상점 API는 SHOP 가구만 내려주고 기본(BASIC) 가구는 포함하지 않는다.
 // 카테고리는 상점에 판매 중인 가구가 하나도 없어도 항상 보여야 하므로 정의를 먼저 채워두고,
@@ -163,12 +223,17 @@ const categories = computed(() => {
   byCategoryKey.forEach((bucket, key) => {
     if (bucket.items.some((item) => item.owned) || isCategoryUnlocked(key)) return
 
-    const layer = resolveRoomLayer(key)
+    const claimOption = rewardClaimOptionsByCategory.value.get(key)
+    const basicFurniture = claimOption?.furniture
+    const layer = resolveRoomLayer(basicFurniture ?? key)
     bucket.items.unshift({
       key: `unlock-${key}`,
-      name: `기본 ${layer?.label ?? bucket.name}`,
+      name: basicFurniture?.name ?? `기본 ${layer?.label ?? bucket.name}`,
       thumbnail: layer?.thumbnailSrc,
       isUnlockSlot: true,
+      rewardId: claimOption?.rewardId,
+      rewardStage: claimOption?.rewardStage,
+      furnitureId: basicFurniture?.furnitureId,
     })
   })
 
@@ -180,24 +245,37 @@ function getOwnedItemCount(category) {
 }
 
 function getItemStatus(category, item) {
-  if (item.isUnlockSlot) return '해금하기 🎟️ 1'
+  if (item.isUnlockSlot) {
+    if (isFurnitureRewardsPending.value) return '선택권 확인 중'
+    if (isFurnitureRewardsError.value) return '선택권을 확인해 주세요'
+    if (item.rewardId) return '해금하기 🎟️ 1'
+    if (ticketCount.value === 0) return '선택권이 필요해요'
+    return '현재 선택권으로 해금 불가'
+  }
   if (item.isBasic) return '기본 가구'
   if (!isCategoryUnlocked(category.key)) return '기본 가구 해금 후 구매'
   if (item.owned) return '구매 완료'
   return ''
 }
 
-function unlockCategory(category) {
-  if (ticketCount.value < 1 || isCategoryUnlocked(category.key)) return
+function claimBasicFurniture(category, item) {
+  if (
+    !item.rewardId ||
+    !item.furnitureId ||
+    isCategoryUnlocked(category.key) ||
+    rewardClaimMutation.isPending.value
+  )
+    return
 
-  mockTicketsUsed.value += 1
-  unlockedCategoryKeys.value = [...unlockedCategoryKeys.value, category.key]
-  unlockedCategory.value = category
+  rewardClaimMutation.mutate({
+    rewardId: item.rewardId,
+    furnitureId: item.furnitureId,
+  })
 }
 
 function purchaseItem(category, item) {
   if (item.isUnlockSlot) {
-    unlockCategory(category)
+    claimBasicFurniture(category, item)
     return
   }
   if (
@@ -260,12 +338,27 @@ function purchaseItem(category, item) {
           </div>
         </section>
 
+        <div
+          v-if="isFurnitureRewardsError"
+          class="mt-4 flex items-center justify-between gap-3 rounded-control bg-red-50 px-4 py-3"
+          role="alert"
+        >
+          <span class="text-sm font-bold text-danger">가구 선택권을 확인하지 못했어요.</span>
+          <button
+            type="button"
+            class="shrink-0 text-sm font-extrabold text-danger underline underline-offset-2"
+            @click="refetchFurnitureRewards()"
+          >
+            다시 시도
+          </button>
+        </div>
+
         <p
-          v-if="purchaseErrorMessage"
+          v-if="shopActionErrorMessage"
           class="mt-4 rounded-control bg-red-50 px-4 py-3 text-sm font-bold text-danger"
           role="alert"
         >
-          {{ purchaseErrorMessage }}
+          {{ shopActionErrorMessage }}
         </p>
 
         <p v-if="isShopPending" class="mt-8 text-center text-sm text-muted">
@@ -313,8 +406,12 @@ function purchaseItem(category, item) {
                 :name="item.name"
                 :thumbnail="item.thumbnail"
                 :selected="item.owned"
-                :locked="!item.isBasic && !item.isUnlockSlot && !isCategoryUnlocked(category.key)"
-                :ticket-cost="item.isUnlockSlot ? 1 : null"
+                :locked="
+                  item.isUnlockSlot
+                    ? !item.rewardId
+                    : !item.isBasic && !isCategoryUnlocked(category.key)
+                "
+                :ticket-cost="item.isUnlockSlot && item.rewardId ? 1 : null"
                 :price="
                   !item.isBasic && isCategoryUnlocked(category.key) && !item.owned
                     ? item.coinPrice
@@ -322,7 +419,11 @@ function purchaseItem(category, item) {
                 "
                 :status-text="getItemStatus(category, item)"
                 :disabled="
-                  (item.isUnlockSlot && ticketCount === 0) ||
+                  (item.isUnlockSlot &&
+                    (!item.rewardId ||
+                      isFurnitureRewardsPending ||
+                      isFurnitureRewardsError ||
+                      rewardClaimMutation.isPending.value)) ||
                   item.isBasic ||
                   (!item.isUnlockSlot &&
                     !item.isBasic &&
@@ -371,11 +472,11 @@ function purchaseItem(category, item) {
         </p>
         <div class="mt-5 rounded-control bg-brand-primary-soft p-4">
           <img
-            :src="unlockedCategory.items[0].thumbnail"
-            :alt="unlockedCategory.items[0].name"
+            :src="unlockedCategory.thumbnail"
+            :alt="unlockedCategory.itemName"
             class="mx-auto size-28 object-contain"
           />
-          <p class="font-extrabold text-ink">{{ unlockedCategory.items[0].name }}</p>
+          <p class="font-extrabold text-ink">{{ unlockedCategory.itemName }}</p>
           <p class="mt-1 text-xs font-bold text-brand-primary">이 카테고리의 기본 아이템이에요.</p>
         </div>
         <FurnitureTicketChip

@@ -57,6 +57,13 @@ const furnitureRewardsResponseSchema = z.object({
   }),
 })
 
+const furnitureRewardClaimResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.literal('ROOM_003'),
+  message: z.string(),
+  data: roomFurnitureSchema,
+})
+
 const shopFurnitureItemSchema = z.object({
   furnitureId: z.number().int().positive(),
   categoryId: z.number().int().positive(),
@@ -92,6 +99,16 @@ export async function getRoom() {
 export async function getFurnitureRewards() {
   const response = await apiClient.get('/rooms/furniture-rewards')
   return furnitureRewardsResponseSchema.parse(response.data).data.rewards
+}
+
+export async function claimFurnitureReward(rewardId, furnitureId) {
+  const validatedRewardId = z.number().int().positive().parse(rewardId)
+  const validatedFurnitureId = z.number().int().positive().parse(furnitureId)
+  const response = await apiClient.post(`/rooms/furniture-rewards/${validatedRewardId}/claim`, {
+    furnitureId: validatedFurnitureId,
+  })
+
+  return furnitureRewardClaimResponseSchema.parse(response.data).data
 }
 
 export async function updateFurniturePlacement(furnitureId, placed) {
