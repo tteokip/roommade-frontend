@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 
+import CoinIcon from './CoinIcon.vue'
+
 const props = defineProps({
   balance: {
     type: Number,
@@ -28,7 +30,7 @@ const displayText = computed(() => {
     class="flex h-9 items-center gap-1 whitespace-nowrap rounded-pill bg-amber-50 px-3 text-sm font-extrabold text-amber-600"
     :role="isError ? 'alert' : 'status'"
   >
-    <span aria-hidden="true">🪙</span>
+    <CoinIcon :size="16" />
     {{ displayText }}
   </span>
 </template>

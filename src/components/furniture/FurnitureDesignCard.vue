@@ -1,4 +1,5 @@
 <script setup>
+import CoinIcon from './CoinIcon.vue'
 import FurnitureTicketIcon from './FurnitureTicketIcon.vue'
 
 defineProps({
@@ -91,8 +92,12 @@ defineEmits(['select'])
       </span>
       {{ ticketCost }}
     </span>
-    <p v-else-if="price != null" class="mt-0.5 text-[11px] font-bold text-amber-600">
-      🪙 {{ price.toLocaleString() }}P
+    <p
+      v-else-if="price != null"
+      class="mt-0.5 flex items-center justify-center gap-1 text-[11px] font-bold text-amber-600"
+    >
+      <CoinIcon :size="12" />
+      {{ price.toLocaleString() }}P
     </p>
     <p
       v-else-if="statusText"
