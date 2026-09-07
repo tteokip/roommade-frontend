@@ -553,7 +553,7 @@ onBeforeUnmount(() => {
               </AccordionItem>
             </AppCard>
 
-            <AppCard v-if="!hasSubmittedRent || rirDiagnosis?.state !== 'ready'" padding="sm">
+            <AppCard v-if="rirDiagnosis?.state !== 'ready'" padding="sm">
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
@@ -625,7 +625,7 @@ onBeforeUnmount(() => {
             </AppCard>
 
             <RirDiagnosisCard
-              v-if="hasSubmittedRent && rirDiagnosis?.state === 'ready'"
+              v-if="rirDiagnosis?.state === 'ready'"
               :diagnosis="rirDiagnosis.diagnosis"
             />
           </div>
