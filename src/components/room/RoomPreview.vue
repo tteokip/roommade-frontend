@@ -4,22 +4,6 @@ import { computed } from 'vue'
 import roomImage from '@/assets/room-layer/empty_room.png'
 import { ROOM_LAYER_DEFINITIONS, resolveRoomLayer } from '@/constants/room'
 
-import oakBedImage from '@/assets/room-layer/warm-oak/bed-layer.png'
-import oakChairImage from '@/assets/room-layer/warm-oak/chair-layer.png'
-import oakClosetImage from '@/assets/room-layer/warm-oak/closet-layer.png'
-import oakDeskImage from '@/assets/room-layer/warm-oak/desk-layer.png'
-import oakLampImage from '@/assets/room-layer/warm-oak/lamp-layer.png'
-import oakPlantImage from '@/assets/room-layer/warm-oak/pot-layer.png'
-import oakWindowImage from '@/assets/room-layer/warm-oak/window-layer.png'
-
-import cozyBedImage from '@/assets/room-layer/cozy-cottage/bed-layer.png'
-import cozyChairImage from '@/assets/room-layer/cozy-cottage/chair-layer.png'
-import cozyClosetImage from '@/assets/room-layer/cozy-cottage/closet-layer.png'
-import cozyDeskImage from '@/assets/room-layer/cozy-cottage/desk-layer.png'
-import cozyLampImage from '@/assets/room-layer/cozy-cottage/lamp-layer.png'
-import cozyPlantImage from '@/assets/room-layer/cozy-cottage/pot-layer.png'
-import cozyWindowImage from '@/assets/room-layer/cozy-cottage/window-layer.png'
-
 const props = defineProps({
   furniture: {
     type: Array,
@@ -34,27 +18,6 @@ const props = defineProps({
     default: 'default',
   },
 })
-
-const variantImages = {
-  'warm-oak': {
-    window: oakWindowImage,
-    closet: oakClosetImage,
-    bed: oakBedImage,
-    desk: oakDeskImage,
-    chair: oakChairImage,
-    lamp: oakLampImage,
-    plant: oakPlantImage,
-  },
-  'cozy-cottage': {
-    window: cozyWindowImage,
-    closet: cozyClosetImage,
-    bed: cozyBedImage,
-    desk: cozyDeskImage,
-    chair: cozyChairImage,
-    lamp: cozyLampImage,
-    plant: cozyPlantImage,
-  },
-}
 
 // variant 원본이 default와 같은 좌표로 그려지지 않은 레이어만 여기에 전용 클래스를 추가한다.
 // 없는 레이어는 room-layer--{key} 공용 클래스를 그대로 쓴다.
@@ -73,34 +36,20 @@ const layerTransformOverrides = {
   },
 }
 
-// 가구 하나에 furniture.variant 가 있으면 그 값을, 없으면 RoomPreview 전체 기본값인
-// props.variant 를 그 가구의 디자인 세트로 쓴다. (방 꾸미기 화면처럼 가구별로 다른
-// 디자인 세트를 섞어 쓰는 경우를 위한 것 — 홈 화면처럼 방 전체에 세트 하나만 쓸 때는
-// props.variant 만 넘기면 된다.)
-function resolveItemVariant(furniture) {
-  if (typeof furniture === 'object' && furniture?.variant) return furniture.variant
-  return props.variant
-}
-
 const visibleLayers = computed(() => {
   const selectedLayers = new Map()
 
   props.furniture.forEach((furniture) => {
     if (typeof furniture === 'object' && furniture.placed === false) return
 
-    const layer = resolveRoomLayer(furniture)
-    if (!layer) return
-
-    const itemVariant = resolveItemVariant(furniture)
-    const images = variantImages[itemVariant] ?? null
-    const overrides = layerTransformOverrides[itemVariant] ?? {}
-
-    selectedLayers.set(layer.key, {
-      ...layer,
-      variant: itemVariant,
-      src: images?.[layer.key] ?? layer.src,
-      layerClass: overrides[layer.key] ?? `room-layer--${layer.key}`,
-    })
+    const layer = resolveRoomLayer(furniture, props.variant)
+    if (layer) {
+      selectedLayers.set(layer.key, {
+        ...layer,
+        layerClass:
+          layerTransformOverrides[layer.variant]?.[layer.key] ?? `room-layer--${layer.key}`,
+      })
+    }
   })
 
   return ROOM_LAYER_DEFINITIONS.map((definition) => selectedLayers.get(definition.key)).filter(
@@ -146,7 +95,7 @@ const roomDescription = computed(() => {
       />
       <img
         v-if="chairLayer"
-        :key="`chair-floor-shadow:${chairLayer.variant}`"
+        :key="`chair-floor-shadow:${chairLayer.furnitureId ?? chairLayer.variant}`"
         :src="chairLayer.src"
         :class="chairShadowClass"
         aria-hidden="true"
@@ -156,7 +105,7 @@ const roomDescription = computed(() => {
 
       <img
         v-for="layer in visibleLayers"
-        :key="layer.furnitureId ?? `${layer.key}:${layer.variant}`"
+        :key="`${layer.key}:${layer.furnitureId ?? layer.variant}`"
         :src="layer.src"
         alt=""
         aria-hidden="true"
