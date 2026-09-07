@@ -6,6 +6,7 @@ import { InfoIcon } from '@/shared/ui/icons'
 
 const props = defineProps({
   diagnosis: { type: Object, required: true },
+  showScore: { type: Boolean, default: false },
 })
 
 const isExpanded = ref(true)
@@ -34,6 +35,7 @@ const targetGap = computed(() =>
 )
 
 const displayTargetGap = computed(() => Math.ceil(targetGap.value))
+const displayScore = computed(() => Math.round(props.diagnosis.score))
 const displayRirPercent = computed(() => Math.round(props.diagnosis.rirPercent))
 
 const headline = computed(() => {
@@ -144,12 +146,18 @@ function formatAmount(value) {
         </span>
         <button
           type="button"
-          class="flex shrink-0 items-center rounded-control text-right outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+          class="flex shrink-0 items-center gap-3 rounded-control text-right outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
           :aria-expanded="isExpanded"
           aria-controls="rir-diagnosis-details"
           :aria-label="isExpanded ? 'RIR 진단 접기' : 'RIR 진단 펼치기'"
           @click="isExpanded = !isExpanded"
         >
+          <span v-if="showScore">
+            <span class="text-sm font-extrabold text-brand-primary">
+              {{ displayScore }}
+            </span>
+            <span class="ml-1 text-sm font-medium text-muted">/{{ diagnosis.maxScore }}점</span>
+          </span>
           <svg
             viewBox="0 0 24 24"
             class="size-5 shrink-0 text-muted transition-transform"

@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 
+import furnitureCouponTicketIcon from '@/assets/furniture-coupon-ticket-icon.png'
+import { FURNITURE_REWARD_STAGES } from '@/constants/furnitureRewards'
 import { AppCard } from '@/shared/ui'
 
 const props = defineProps({
@@ -22,19 +24,30 @@ const scoreBreakdown = computed(() => [
   },
 ])
 
-const displayScore = computed(() =>
-  scoreBreakdown.value.reduce((total, item) => total + item.score, 0),
-)
+const readinessScore = computed(() => Number(props.diagnosis.readinessScore))
+const displayScore = computed(() => Math.round(readinessScore.value))
 const displayMaxScore = computed(() => Math.round(props.diagnosis.maxScore))
 const progress = computed(() => {
   if (displayMaxScore.value <= 0) return 0
 
-  return Math.min(Math.max((displayScore.value / displayMaxScore.value) * 100, 0), 100)
+  return Math.min(Math.max((readinessScore.value / displayMaxScore.value) * 100, 0), 100)
 })
 
 const progressStyle = computed(() => ({
   width: `${progress.value}%`,
 }))
+
+const rewardMilestones = computed(() => {
+  const achievedStages = FURNITURE_REWARD_STAGES.filter((stage) => readinessScore.value >= stage)
+  const latestAchievedStage = achievedStages.at(-1)
+
+  return FURNITURE_REWARD_STAGES.map((stage) => ({
+    stage,
+    achieved: readinessScore.value >= stage,
+    latest: stage === latestAchievedStage,
+    position: `${Math.min((stage / displayMaxScore.value) * 100, 100)}%`,
+  }))
+})
 
 const scoreFormulaLabel = computed(
   () =>
@@ -60,18 +73,56 @@ const scoreFormulaLabel = computed(
         <span class="mt-1 text-5xl" aria-hidden="true">📋</span>
       </div>
 
-      <div
-        class="mt-4 h-2 overflow-hidden rounded-pill bg-white/80"
-        role="progressbar"
-        aria-label="자립 준비도"
-        aria-valuemin="0"
-        :aria-valuemax="displayMaxScore"
-        :aria-valuenow="displayScore"
-      >
-        <span
-          class="block h-full rounded-pill bg-gradient-to-r from-brand-primary-dark to-violet-400 transition-[width] duration-500"
-          :style="progressStyle"
-        />
+      <div class="mt-6 pb-10">
+        <div class="relative">
+          <div
+            class="h-2 rounded-pill bg-white/80"
+            role="progressbar"
+            aria-label="자립 준비도"
+            aria-valuemin="0"
+            :aria-valuemax="displayMaxScore"
+            :aria-valuenow="readinessScore"
+          >
+            <span
+              class="block h-full rounded-pill bg-gradient-to-r from-brand-primary-dark to-violet-400 transition-[width] duration-500"
+              :style="progressStyle"
+            />
+          </div>
+
+          <ol class="absolute inset-0" aria-label="가구 선택권 보상 단계">
+            <li
+              v-for="milestone in rewardMilestones"
+              :key="milestone.stage"
+              class="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+              :style="{ left: milestone.position }"
+            >
+              <span
+                class="relative grid size-5 place-items-center rounded-full border bg-white transition-colors"
+                :class="[
+                  milestone.achieved ? 'border-brand-primary' : 'border-white',
+                  milestone.latest && 'shadow-[0_0_0_4px_rgb(139_92_246/0.12)]',
+                ]"
+              >
+                <img
+                  :src="furnitureCouponTicketIcon"
+                  alt=""
+                  class="h-3 w-[15px] object-contain"
+                  :class="milestone.achieved ? 'opacity-100' : 'opacity-40 grayscale'"
+                  aria-hidden="true"
+                />
+              </span>
+              <span
+                class="absolute left-1/2 top-7 -translate-x-1/2 whitespace-nowrap text-xs font-extrabold"
+                :class="milestone.achieved ? 'text-body' : 'text-muted'"
+              >
+                {{ milestone.stage }}%
+              </span>
+              <span class="sr-only">
+                {{ milestone.stage }}% 보상 {{ milestone.achieved ? '획득' : '미획득' }}
+              </span>
+            </li>
+          </ol>
+        </div>
       </div>
 
       <dl
