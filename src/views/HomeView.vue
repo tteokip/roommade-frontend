@@ -1,12 +1,30 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { useRouter } from 'vue-router'
+
+import { getRoom, roomQueryKey } from '@/api/room'
 import { getTodayQuiz, submitTodayQuizAnswer } from '@/api/quiz'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import DailyQuizCard from '@/components/quiz/DailyQuizCard.vue'
 import DailyQuizSheet from '@/components/quiz/DailyQuizSheet.vue'
 import RoomPreview from '@/components/room/RoomPreview.vue'
 
-const homeFurniture = ['window', 'closet', 'bed', 'desk', 'chair', 'lamp', 'plant']
+const router = useRouter()
+
+const {
+  data: room,
+  isPending: isRoomPending,
+  isError: isRoomError,
+  refetch: refetchRoom,
+} = useQuery({
+  queryKey: roomQueryKey,
+  queryFn: getRoom,
+})
+
+const placedFurniture = computed(() =>
+  (room.value?.furniture ?? []).filter((furniture) => furniture.placed),
+)
 
 const isQuizOpen = ref(false)
 const todayQuiz = ref(null)
@@ -42,6 +60,10 @@ async function submitQuiz(selectedChoiceId) {
     isQuizSubmitting.value = false
   }
 }
+
+function openRoomDecorate() {
+  router.push({ name: 'room-decorate' })
+}
 </script>
 
 <template>
@@ -53,10 +75,42 @@ async function submitQuiz(selectedChoiceId) {
         </header>
 
         <section aria-label="나의 방" class="relative">
-          <RoomPreview :furniture="homeFurniture" />
+          <div class="relative">
+            <RoomPreview :furniture="placedFurniture" />
+
+            <div
+              v-if="isRoomPending"
+              class="absolute inset-0 z-10 grid place-items-center rounded-card bg-white/75"
+              role="status"
+            >
+              <div class="flex flex-col items-center gap-3">
+                <span
+                  class="size-9 animate-spin rounded-full border-4 border-brand-primary-soft border-t-brand-primary"
+                />
+                <span class="text-sm font-bold text-muted">내 방을 불러오는 중이에요.</span>
+              </div>
+            </div>
+
+            <div
+              v-else-if="isRoomError"
+              class="absolute inset-0 z-10 grid place-items-center rounded-card bg-white/90 px-6 text-center"
+            >
+              <div>
+                <p class="font-extrabold text-ink">내 방을 불러오지 못했어요.</p>
+                <button
+                  type="button"
+                  class="mt-3 rounded-pill bg-brand-primary-soft px-4 py-2 text-sm font-bold text-brand-primary"
+                  @click="refetchRoom"
+                >
+                  다시 시도
+                </button>
+              </div>
+            </div>
+          </div>
 
           <button
             type="button"
+            :disabled="isRoomPending || isRoomError"
             class="absolute right-3 top-3 z-20 flex size-12 items-center justify-center rounded-full border border-line bg-white text-brand-primary shadow-card transition-transform active:scale-95"
             aria-label="내 방 공유하기"
           >
@@ -76,7 +130,9 @@ async function submitQuiz(selectedChoiceId) {
           <div class="mt-4 grid grid-cols-2 gap-3 px-2">
             <button
               type="button"
-              class="flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-base font-extrabold text-body shadow-card transition-transform active:scale-[0.98]"
+              :disabled="isRoomPending || isRoomError"
+              class="flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-base font-extrabold text-body shadow-card transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+              @click="openRoomDecorate"
             >
               <span class="text-2xl" aria-hidden="true">🎨</span>
               <span>방 꾸미기</span>
