@@ -65,6 +65,12 @@ if (import.meta.env.DEV) {
     name: 'room-layer-test',
     component: () => import('@/views/RoomLayerTestView.vue'),
   })
+
+  routes.push({
+    path: '/shop-layer-test',
+    name: 'shop-layer-test',
+    component: () => import('@/views/ShopLayerTestView.vue'),
+  })
 }
 
 const router = createRouter({

@@ -4,14 +4,6 @@ import { computed } from 'vue'
 import roomImage from '@/assets/room-layer/empty_room.png'
 import { ROOM_LAYER_DEFINITIONS, resolveRoomLayer } from '@/constants/room'
 
-import cozyBedImage from '@/assets/room-layer/cozy-cottage/bed-layer.png'
-import cozyChairImage from '@/assets/room-layer/cozy-cottage/chair-layer.png'
-import cozyClosetImage from '@/assets/room-layer/cozy-cottage/closet-layer.png'
-import cozyDeskImage from '@/assets/room-layer/cozy-cottage/desk-layer.png'
-import cozyLampImage from '@/assets/room-layer/cozy-cottage/lamp-layer.png'
-import cozyPlantImage from '@/assets/room-layer/cozy-cottage/pot-layer.png'
-import cozyWindowImage from '@/assets/room-layer/cozy-cottage/window-layer.png'
-
 import oakBedImage from '@/assets/room-layer/warm-oak/bed-layer.png'
 import oakChairImage from '@/assets/room-layer/warm-oak/chair-layer.png'
 import oakClosetImage from '@/assets/room-layer/warm-oak/closet-layer.png'
@@ -19,6 +11,14 @@ import oakDeskImage from '@/assets/room-layer/warm-oak/desk-layer.png'
 import oakLampImage from '@/assets/room-layer/warm-oak/lamp-layer.png'
 import oakPlantImage from '@/assets/room-layer/warm-oak/pot-layer.png'
 import oakWindowImage from '@/assets/room-layer/warm-oak/window-layer.png'
+
+import cozyBedImage from '@/assets/room-layer/cozy-cottage/bed-layer.png'
+import cozyChairImage from '@/assets/room-layer/cozy-cottage/chair-layer.png'
+import cozyClosetImage from '@/assets/room-layer/cozy-cottage/closet-layer.png'
+import cozyDeskImage from '@/assets/room-layer/cozy-cottage/desk-layer.png'
+import cozyLampImage from '@/assets/room-layer/cozy-cottage/lamp-layer.png'
+import cozyPlantImage from '@/assets/room-layer/cozy-cottage/pot-layer.png'
+import cozyWindowImage from '@/assets/room-layer/cozy-cottage/window-layer.png'
 
 const props = defineProps({
   furniture: {
@@ -36,15 +36,6 @@ const props = defineProps({
 })
 
 const variantImages = {
-  'cozy-cottage': {
-    window: cozyWindowImage,
-    closet: cozyClosetImage,
-    bed: cozyBedImage,
-    desk: cozyDeskImage,
-    chair: cozyChairImage,
-    lamp: cozyLampImage,
-    plant: cozyPlantImage,
-  },
   'warm-oak': {
     window: oakWindowImage,
     closet: oakClosetImage,
@@ -54,14 +45,20 @@ const variantImages = {
     lamp: oakLampImage,
     plant: oakPlantImage,
   },
+  'cozy-cottage': {
+    window: cozyWindowImage,
+    closet: cozyClosetImage,
+    bed: cozyBedImage,
+    desk: cozyDeskImage,
+    chair: cozyChairImage,
+    lamp: cozyLampImage,
+    plant: cozyPlantImage,
+  },
 }
 
 // variant 원본이 default와 같은 좌표로 그려지지 않은 레이어만 여기에 전용 클래스를 추가한다.
 // 없는 레이어는 room-layer--{key} 공용 클래스를 그대로 쓴다.
 const layerTransformOverrides = {
-  'cozy-cottage': {
-    bed: 'room-layer--bed-cozy-cottage',
-  },
   'warm-oak': {
     bed: 'room-layer--bed-warm-oak',
     chair: 'room-layer--chair-warm-oak',
@@ -70,6 +67,9 @@ const layerTransformOverrides = {
     lamp: 'room-layer--lamp-warm-oak',
     plant: 'room-layer--plant-warm-oak',
     window: 'room-layer--window-warm-oak',
+  },
+  'cozy-cottage': {
+    bed: 'room-layer--bed-cozy-cottage',
   },
 }
 

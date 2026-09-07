@@ -30,8 +30,8 @@ const selectedFurniture = ref([])
 
 const variantOptions = [
   { key: 'default', label: '기본' },
-  { key: 'cozy-cottage', label: '코지 코티지' },
   { key: 'warm-oak', label: '웜 오크' },
+  { key: 'cozy-cottage', label: '코지 코티지' },
 ]
 const selectedVariant = ref('default')
 
