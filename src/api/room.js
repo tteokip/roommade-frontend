@@ -3,6 +3,7 @@ import { z } from 'zod'
 import apiClient from './client'
 
 export const roomQueryKey = ['room']
+export const furnitureRewardsQueryKey = ['room', 'furniture-rewards']
 
 export const roomFurnitureSchema = z.object({
   furnitureId: z.number().int().positive(),
@@ -31,9 +32,38 @@ const furniturePlacementResponseSchema = z.object({
   data: roomFurnitureSchema,
 })
 
+const furnitureRewardOptionSchema = z.object({
+  furnitureId: z.number().int().positive(),
+  categoryId: z.number().int().positive(),
+  categoryName: z.string().min(1),
+  name: z.string().min(1),
+  assetUrl: z.string().nullable(),
+})
+
+const furnitureRewardsResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.literal('ROOM_002'),
+  message: z.string(),
+  data: z.object({
+    rewards: z.array(
+      z.object({
+        rewardId: z.number().int().positive(),
+        rewardStage: z.number().int().nonnegative(),
+        grantedAt: z.string(),
+        choices: z.array(furnitureRewardOptionSchema),
+      }),
+    ),
+  }),
+})
+
 export async function getRoom() {
   const response = await apiClient.get('/rooms')
   return roomResponseSchema.parse(response.data).data
+}
+
+export async function getFurnitureRewards() {
+  const response = await apiClient.get('/rooms/furniture-rewards')
+  return furnitureRewardsResponseSchema.parse(response.data).data.rewards
 }
 
 export async function updateFurniturePlacement(furnitureId, placed) {

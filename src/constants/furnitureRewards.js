@@ -1,0 +1,1 @@
+export const FURNITURE_REWARD_STAGES = [15, 30, 45, 60, 75]
