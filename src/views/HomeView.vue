@@ -3,11 +3,12 @@ import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
-import { getRoom, roomQueryKey } from '@/api/room'
+import { furnitureRewardsQueryKey, getFurnitureRewards, getRoom, roomQueryKey } from '@/api/room'
 import { getTodayQuiz, submitTodayQuizAnswer } from '@/api/quiz'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import DailyQuizCard from '@/components/quiz/DailyQuizCard.vue'
 import DailyQuizSheet from '@/components/quiz/DailyQuizSheet.vue'
+import FurnitureRewardBanner from '@/components/readiness/FurnitureRewardBanner.vue'
 import RoomPreview from '@/components/room/RoomPreview.vue'
 
 const router = useRouter()
@@ -25,6 +26,19 @@ const {
 const placedFurniture = computed(() =>
   (room.value?.furniture ?? []).filter((furniture) => furniture.placed),
 )
+
+const {
+  data: furnitureRewards,
+  isError: isFurnitureRewardsError,
+  isPending: isFurnitureRewardsPending,
+  refetch: refetchFurnitureRewards,
+} = useQuery({
+  queryKey: furnitureRewardsQueryKey,
+  queryFn: getFurnitureRewards,
+  retry: 1,
+})
+
+const pendingFurnitureRewardCount = computed(() => furnitureRewards.value?.length ?? 0)
 
 const isQuizOpen = ref(false)
 const todayQuiz = ref(null)
@@ -77,6 +91,34 @@ function openShop() {
         <header class="py-2 pl-[5.2%] text-left">
           <h1 class="text-4xl font-black tracking-[-0.06em] text-ink">룸메이드</h1>
         </header>
+
+        <div v-if="isFurnitureRewardsPending" role="status">
+          <span class="sr-only">가구 선택권을 확인하는 중이에요.</span>
+          <span
+            class="block h-[4rem] animate-pulse rounded-control bg-brand-primary-soft/70"
+            aria-hidden="true"
+          />
+        </div>
+
+        <div
+          v-else-if="isFurnitureRewardsError"
+          class="flex items-center justify-between gap-3 rounded-control bg-red-50 px-4 py-3"
+          role="alert"
+        >
+          <span class="text-sm font-bold text-danger">가구 선택권을 확인하지 못했어요.</span>
+          <button
+            type="button"
+            class="shrink-0 text-sm font-extrabold text-danger underline underline-offset-2"
+            @click="refetchFurnitureRewards()"
+          >
+            다시 시도
+          </button>
+        </div>
+
+        <FurnitureRewardBanner
+          v-else-if="pendingFurnitureRewardCount > 0"
+          :count="pendingFurnitureRewardCount"
+        />
 
         <section aria-label="나의 방" class="relative">
           <div class="relative">
@@ -144,11 +186,18 @@ function openShop() {
 
             <button
               type="button"
-              class="flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-base font-extrabold text-body shadow-card transition-transform active:scale-[0.98]"
+              class="relative flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-base font-extrabold text-body shadow-card transition-transform active:scale-[0.98]"
               @click="openShop"
             >
               <span class="text-2xl" aria-hidden="true">🛍️</span>
               <span>상점</span>
+              <span
+                v-if="pendingFurnitureRewardCount > 0"
+                class="absolute -right-1 -top-2 grid min-h-6 min-w-6 place-items-center rounded-full bg-brand-primary px-1.5 text-xs font-extrabold text-white shadow-sm"
+                :aria-label="`사용 가능한 가구 선택권 ${pendingFurnitureRewardCount}장`"
+              >
+                {{ pendingFurnitureRewardCount }}
+              </span>
             </button>
           </div>
         </section>

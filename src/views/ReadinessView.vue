@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
 import { getCurrentComparison } from '@/api/house'
+import { furnitureRewardsQueryKey, getFurnitureRewards } from '@/api/room'
 import {
   confirmHouse,
   getDepositProgress,
@@ -13,6 +14,7 @@ import {
 } from '@/api/preparations'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import DepositProgressCard from '@/components/readiness/DepositProgressCard.vue'
+import FurnitureRewardBanner from '@/components/readiness/FurnitureRewardBanner.vue'
 import HouseConfirmationCard from '@/components/readiness/HouseConfirmationCard.vue'
 import MoveInScheduledPanel from '@/components/readiness/MoveInScheduledPanel.vue'
 import ReadinessSummaryCard from '@/components/readiness/ReadinessSummaryCard.vue'
@@ -40,6 +42,20 @@ const isPreparing = computed(() => readinessDiagnosis.value?.independenceStatus 
 const isMoveInScheduled = computed(
   () => readinessDiagnosis.value?.independenceStatus === 'MOVE_IN_SCHEDULED',
 )
+
+const {
+  data: furnitureRewards,
+  isError: isFurnitureRewardsError,
+  isPending: isFurnitureRewardsPending,
+  refetch: refetchFurnitureRewards,
+} = useQuery({
+  queryKey: furnitureRewardsQueryKey,
+  queryFn: getFurnitureRewards,
+  enabled: isPreparing,
+  retry: 1,
+})
+
+const pendingFurnitureRewardCount = computed(() => furnitureRewards.value?.length ?? 0)
 
 watch(
   () => readinessDiagnosis.value?.independenceStatus,
@@ -216,6 +232,35 @@ function retryHouseConfirmation() {
         />
 
         <template v-else-if="isPreparing">
+          <div v-if="isFurnitureRewardsPending" class="mb-4" role="status">
+            <span class="sr-only">가구 선택권을 확인하는 중이에요.</span>
+            <span
+              class="block h-[4rem] animate-pulse rounded-control bg-brand-primary-soft/70"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div
+            v-else-if="isFurnitureRewardsError"
+            class="mb-4 flex items-center justify-between gap-3 rounded-control bg-red-50 px-4 py-3"
+            role="alert"
+          >
+            <span class="text-sm font-bold text-danger">가구 선택권을 확인하지 못했어요.</span>
+            <button
+              type="button"
+              class="shrink-0 text-sm font-extrabold text-danger underline underline-offset-2"
+              @click="refetchFurnitureRewards()"
+            >
+              다시 시도
+            </button>
+          </div>
+
+          <FurnitureRewardBanner
+            v-else-if="pendingFurnitureRewardCount > 0"
+            class="mb-4"
+            :count="pendingFurnitureRewardCount"
+          />
+
           <ReadinessSummaryCard :diagnosis="readinessDiagnosis" />
 
           <div class="mt-5 space-y-4">
@@ -226,7 +271,7 @@ function retryHouseConfirmation() {
               :description="rirErrorDescription"
               @retry="refetchRir()"
             />
-            <RirDiagnosisCard v-else-if="rirDiagnosis" :diagnosis="rirDiagnosis" />
+            <RirDiagnosisCard v-else-if="rirDiagnosis" :diagnosis="rirDiagnosis" show-score />
             <EmptyState
               v-else
               title="RIR 진단 결과가 아직 없어요"
