@@ -1,17 +1,28 @@
 <script setup>
-import { ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
 import { coinBalanceQueryKey, getCoinBalance } from '@/api/coin'
+import {
+  furnitureRewardsQueryKey,
+  getFurnitureRewards,
+  getRoom,
+  getShopFurniture,
+  purchaseFurniture,
+  roomQueryKey,
+  shopFurnitureQueryKey,
+} from '@/api/room'
 import CoinBalanceChip from '@/components/furniture/CoinBalanceChip.vue'
+import CoinIcon from '@/components/furniture/CoinIcon.vue'
 import FurnitureDesignCard from '@/components/furniture/FurnitureDesignCard.vue'
 import FurnitureTicketChip from '@/components/furniture/FurnitureTicketChip.vue'
 import FurnitureTicketIcon from '@/components/furniture/FurnitureTicketIcon.vue'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
-import { ROOM_LAYER_DEFINITIONS, ROOM_VARIANTS } from '@/constants/room'
+import { ROOM_LAYER_DEFINITIONS, resolveRoomLayer } from '@/constants/room'
 
 const router = useRouter()
+const queryClient = useQueryClient()
 
 const {
   data: coinBalance,
@@ -22,100 +33,182 @@ const {
   queryFn: getCoinBalance,
 })
 
-const thumbnailModules = import.meta.glob('@/assets/room-layer/thumbnails/*/*.png', {
-  eager: true,
-  import: 'default',
+// 선택권으로 카테고리를 해금하는 실제 연동은 다른 담당자가 작업 중이라 아직 없다.
+// 그동안 화면이 비어 보이지 않도록 예전 목업과 같은 방식(로컬 상태만 변경)으로 해금 버튼/모달을 유지한다.
+const { data: furnitureRewards } = useQuery({
+  queryKey: furnitureRewardsQueryKey,
+  queryFn: getFurnitureRewards,
 })
-
-const categoryNames = {
-  window: '창문',
-  closet: '옷장',
-  bed: '침대',
-  desk: '책상',
-  chair: '의자',
-  lamp: '조명',
-  plant: '화분',
-}
-
-const categoryIcons = {
-  window: '🪟',
-  closet: '🚪',
-  bed: '🛏️',
-  desk: '🖥️',
-  chair: '🪑',
-  lamp: '💡',
-  plant: '🪴',
-}
-
-const variantNames = {
-  default: '기본',
-  'warm-oak': '포근한',
-  'cozy-cottage': '모던',
-}
-
-const ticketCount = ref(ROOM_LAYER_DEFINITIONS.length)
+const mockTicketsUsed = ref(0)
+const ticketCount = computed(() =>
+  Math.max((furnitureRewards.value?.length ?? 0) - mockTicketsUsed.value, 0),
+)
 const unlockedCategoryKeys = ref([])
 const unlockedCategory = ref(null)
-const purchasedItemKeys = ref([])
 const purchasedItem = ref(null)
+const purchaseErrorMessage = ref('')
 
-function thumbnailSrc(variant, key) {
-  return Object.entries(thumbnailModules).find(([path]) =>
-    path.endsWith(`/thumbnails/${variant}/${key}.png`),
-  )?.[1]
-}
+const {
+  data: shopFurniture,
+  isPending: isShopPending,
+  isError: isShopError,
+  refetch: refetchShop,
+} = useQuery({
+  queryKey: shopFurnitureQueryKey(),
+  queryFn: () => getShopFurniture(),
+})
 
-const categories = ROOM_LAYER_DEFINITIONS.map((definition) => ({
-  key: definition.key,
-  name: categoryNames[definition.key] ?? definition.label,
-  icon: categoryIcons[definition.key],
-  items: ROOM_VARIANTS.map((variant, index) => ({
-    key: `${definition.key}-${variant.key}`,
-    variant: variant.key,
-    name: `${variantNames[variant.key]} ${categoryNames[definition.key] ?? definition.label}`,
-    thumbnail: thumbnailSrc(variant.key, definition.key),
-    price: index === 1 ? 2000 : 3000,
-  })),
-}))
+const { data: room } = useQuery({
+  queryKey: roomQueryKey,
+  queryFn: getRoom,
+})
+
+// 카테고리가 실제로 해금됐는지는 상점 API가 내려주는 unlocked 값(기본 가구 보유 여부)으로 판단한다.
+const categoryUnlockedFlags = computed(() => {
+  const flags = new Map()
+  ;(shopFurniture.value ?? []).forEach((item) => {
+    const layer = resolveRoomLayer(item)
+    if (!layer) return
+    flags.set(layer.key, flags.get(layer.key) || item.unlocked)
+  })
+  return flags
+})
 
 function isCategoryUnlocked(categoryKey) {
-  return unlockedCategoryKeys.value.includes(categoryKey)
+  return (
+    Boolean(categoryUnlockedFlags.value.get(categoryKey)) ||
+    unlockedCategoryKeys.value.includes(categoryKey)
+  )
 }
 
-function isItemPurchased(itemKey) {
-  return purchasedItemKeys.value.includes(itemKey)
-}
+const purchaseMutation = useMutation({
+  mutationFn: ({ furnitureId }) => purchaseFurniture(furnitureId),
+  onMutate: () => {
+    purchaseErrorMessage.value = ''
+  },
+  onSuccess: (purchased, variables) => {
+    queryClient.invalidateQueries({ queryKey: shopFurnitureQueryKey() })
+    queryClient.invalidateQueries({ queryKey: coinBalanceQueryKey })
+    queryClient.invalidateQueries({ queryKey: roomQueryKey })
+    const layer = resolveRoomLayer(purchased)
+    purchasedItem.value = {
+      ...purchased,
+      name: layer?.name ?? purchased.name,
+      thumbnail: layer?.thumbnailSrc,
+      price: variables.coinPrice,
+    }
+  },
+  onError: (error) => {
+    const code = error.response?.data?.code
+    purchaseErrorMessage.value =
+      {
+        COIN_005: '코인이 부족해요. 조금 더 모아서 구매해보세요.',
+        ROOM_011: '이미 보유한 가구예요.',
+        ROOM_013: '기본 가구를 먼저 획득해야 구매할 수 있어요.',
+        ROOM_010: '구매할 수 없는 가구예요.',
+      }[code] ?? '구매하지 못했어요. 잠시 후 다시 시도해 주세요.'
+  },
+})
+
+const pendingFurnitureId = computed(() => purchaseMutation.variables.value?.furnitureId ?? null)
+
+// 상점 API는 SHOP 가구만 내려주고 기본(BASIC) 가구는 포함하지 않는다.
+// 카테고리는 상점에 판매 중인 가구가 하나도 없어도 항상 보여야 하므로 정의를 먼저 채워두고,
+// 상점 가구와 보유 중인 기본 가구를 각각 채워 넣는다.
+const categories = computed(() => {
+  const byCategoryKey = new Map(
+    ROOM_LAYER_DEFINITIONS.map((definition) => [
+      definition.key,
+      {
+        key: definition.key,
+        name: definition.categoryName,
+        icon: definition.icon,
+        items: [],
+      },
+    ]),
+  )
+
+  const shopItems = shopFurniture.value ?? []
+  shopItems.forEach((item) => {
+    const layer = resolveRoomLayer(item)
+    const bucket = layer && byCategoryKey.get(layer.key)
+    if (!bucket) return
+
+    bucket.items.push({
+      ...item,
+      key: `shop-${item.furnitureId}`,
+      name: layer.name,
+      thumbnail: layer.thumbnailSrc,
+    })
+  })
+
+  const shopFurnitureIds = new Set(shopItems.map((item) => item.furnitureId))
+  ;(room.value?.furniture ?? [])
+    .filter((item) => !shopFurnitureIds.has(item.furnitureId))
+    .forEach((basicItem) => {
+      const layer = resolveRoomLayer(basicItem)
+      const bucket = layer && byCategoryKey.get(layer.key)
+      if (!bucket) return
+
+      bucket.items.unshift({
+        ...basicItem,
+        key: `basic-${basicItem.furnitureId}`,
+        name: layer.name,
+        thumbnail: layer.thumbnailSrc,
+        owned: true,
+        isBasic: true,
+      })
+    })
+
+  byCategoryKey.forEach((bucket, key) => {
+    if (bucket.items.some((item) => item.owned) || isCategoryUnlocked(key)) return
+
+    const layer = resolveRoomLayer(key)
+    bucket.items.unshift({
+      key: `unlock-${key}`,
+      name: `기본 ${layer?.label ?? bucket.name}`,
+      thumbnail: layer?.thumbnailSrc,
+      isUnlockSlot: true,
+    })
+  })
+
+  return Array.from(byCategoryKey.values()).filter((category) => category.items.length)
+})
 
 function getOwnedItemCount(category) {
-  const basicItemCount = isCategoryUnlocked(category.key) ? 1 : 0
-  return basicItemCount + category.items.slice(1).filter((item) => isItemPurchased(item.key)).length
+  return category.items.filter((item) => item.owned).length
 }
 
-function getItemStatus(category, item, index) {
-  if (index === 0 && isCategoryUnlocked(category.key)) return '해금 완료'
-  if (index === 0) return '해금하기 🎟️ 1'
+function getItemStatus(category, item) {
+  if (item.isUnlockSlot) return '해금하기 🎟️ 1'
+  if (item.isBasic) return '기본 가구'
   if (!isCategoryUnlocked(category.key)) return '기본 가구 해금 후 구매'
-  if (isItemPurchased(item.key)) return '구매 완료'
+  if (item.owned) return '구매 완료'
   return ''
 }
 
 function unlockCategory(category) {
   if (ticketCount.value < 1 || isCategoryUnlocked(category.key)) return
 
-  ticketCount.value -= 1
+  mockTicketsUsed.value += 1
   unlockedCategoryKeys.value = [...unlockedCategoryKeys.value, category.key]
   unlockedCategory.value = category
 }
 
-function purchaseItem(category, item, index) {
-  if (index === 0) {
+function purchaseItem(category, item) {
+  if (item.isUnlockSlot) {
     unlockCategory(category)
     return
   }
-  if (!isCategoryUnlocked(category.key) || isItemPurchased(item.key)) return
+  if (
+    item.isBasic ||
+    !isCategoryUnlocked(category.key) ||
+    item.owned ||
+    purchaseMutation.isPending.value
+  )
+    return
 
-  purchasedItemKeys.value = [...purchasedItemKeys.value, item.key]
-  purchasedItem.value = item
+  purchaseMutation.mutate({ furnitureId: item.furnitureId, coinPrice: item.coinPrice })
 }
 </script>
 
@@ -167,51 +260,80 @@ function purchaseItem(category, item, index) {
           </div>
         </section>
 
-        <section
-          v-for="category in categories"
-          :key="category.key"
-          class="mt-7"
-          :aria-labelledby="`category-${category.key}`"
+        <p
+          v-if="purchaseErrorMessage"
+          class="mt-4 rounded-control bg-red-50 px-4 py-3 text-sm font-bold text-danger"
+          role="alert"
         >
-          <div class="mb-3 flex items-center gap-2 px-1">
-            <span
-              class="grid size-8 place-items-center rounded-lg bg-brand-primary-soft"
-              aria-hidden="true"
-            >
-              {{ category.icon }}
-            </span>
-            <h2 :id="`category-${category.key}`" class="text-lg font-black text-ink">
-              {{ category.name }}
-            </h2>
-            <span class="text-sm font-bold text-muted"> {{ getOwnedItemCount(category) }}/3 </span>
-          </div>
+          {{ purchaseErrorMessage }}
+        </p>
 
-          <div class="grid grid-cols-3 gap-3">
-            <FurnitureDesignCard
-              v-for="(item, index) in category.items"
-              :key="item.key"
-              fluid
-              :name="item.name"
-              :thumbnail="item.thumbnail"
-              :selected="
-                (index === 0 && isCategoryUnlocked(category.key)) || isItemPurchased(item.key)
-              "
-              :locked="index > 0 && !isCategoryUnlocked(category.key)"
-              :ticket-cost="index === 0 && !isCategoryUnlocked(category.key) ? 1 : null"
-              :price="
-                index > 0 && isCategoryUnlocked(category.key) && !isItemPurchased(item.key)
-                  ? item.price
-                  : null
-              "
-              :status-text="getItemStatus(category, item, index)"
-              :disabled="
-                (index === 0 && (ticketCount === 0 || isCategoryUnlocked(category.key))) ||
-                (index > 0 && (!isCategoryUnlocked(category.key) || isItemPurchased(item.key)))
-              "
-              @select="purchaseItem(category, item, index)"
-            />
-          </div>
-        </section>
+        <p v-if="isShopPending" class="mt-8 text-center text-sm text-muted">
+          상점 가구를 불러오는 중이에요.
+        </p>
+
+        <div v-else-if="isShopError" class="mt-8 text-center">
+          <p class="text-sm text-muted">상점 가구를 불러오지 못했어요.</p>
+          <button
+            type="button"
+            class="mt-3 rounded-control border border-line px-4 py-2 text-sm font-extrabold text-body"
+            @click="refetchShop"
+          >
+            다시 시도
+          </button>
+        </div>
+
+        <template v-else>
+          <section
+            v-for="category in categories"
+            :key="category.key"
+            class="mt-7"
+            :aria-labelledby="`category-${category.key}`"
+          >
+            <div class="mb-3 flex items-center gap-2 px-1">
+              <span
+                class="grid size-8 place-items-center rounded-lg bg-brand-primary-soft"
+                aria-hidden="true"
+              >
+                {{ category.icon }}
+              </span>
+              <h2 :id="`category-${category.key}`" class="text-lg font-black text-ink">
+                {{ category.name }}
+              </h2>
+              <span class="text-sm font-bold text-muted">
+                {{ getOwnedItemCount(category) }}/{{ category.items.length }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <FurnitureDesignCard
+                v-for="item in category.items"
+                :key="item.key"
+                fluid
+                :name="item.name"
+                :thumbnail="item.thumbnail"
+                :selected="item.owned"
+                :locked="!item.isBasic && !item.isUnlockSlot && !isCategoryUnlocked(category.key)"
+                :ticket-cost="item.isUnlockSlot ? 1 : null"
+                :price="
+                  !item.isBasic && isCategoryUnlocked(category.key) && !item.owned
+                    ? item.coinPrice
+                    : null
+                "
+                :status-text="getItemStatus(category, item)"
+                :disabled="
+                  (item.isUnlockSlot && ticketCount === 0) ||
+                  item.isBasic ||
+                  (!item.isUnlockSlot &&
+                    !item.isBasic &&
+                    (!isCategoryUnlocked(category.key) || item.owned)) ||
+                  pendingFurnitureId === item.furnitureId
+                "
+                @select="purchaseItem(category, item)"
+              />
+            </div>
+          </section>
+        </template>
 
         <p
           class="mt-8 rounded-control bg-brand-primary-soft px-5 py-4 text-center text-sm font-bold text-brand-primary-dark"
@@ -313,8 +435,11 @@ function purchaseItem(category, item, index) {
             class="mx-auto size-28 object-contain"
           />
           <p class="mt-2 font-extrabold text-ink">{{ purchasedItem.name }}</p>
-          <p class="mt-1 text-sm font-extrabold text-amber-600">
-            🪙 {{ purchasedItem.price.toLocaleString() }}P
+          <p
+            class="mt-1 flex items-center justify-center gap-1 text-sm font-extrabold text-amber-600"
+          >
+            <CoinIcon :size="16" />
+            {{ purchasedItem.price.toLocaleString() }}P
           </p>
         </div>
 
