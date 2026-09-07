@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import houseImage from '@/assets/house.png'
 import HouseConfirmationSheet from '@/components/readiness/HouseConfirmationSheet.vue'
 import { AppButton, AppCard } from '@/shared/ui'
 
@@ -97,10 +98,10 @@ function confirmHouse(payload) {
 
         <div class="flex items-center gap-3">
           <span
-            class="grid size-12 shrink-0 place-items-center rounded-control bg-brand-lavender text-xl"
+            class="grid size-12 shrink-0 place-items-center rounded-control bg-brand-lavender"
             aria-hidden="true"
           >
-            🏡
+            <img :src="houseImage" alt="" class="size-5 object-contain" />
           </span>
           <span class="min-w-0">
             <strong class="block text-[clamp(0.75rem,3.2vw,0.875rem)] font-extrabold text-ink">

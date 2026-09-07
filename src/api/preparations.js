@@ -51,6 +51,25 @@ const houseComparisonProgressResponseSchema = z.object({
   data: houseComparisonProgressSchema,
 })
 
+const readinessDiagnosisResponseSchema = z.object({
+  success: z.literal(true),
+  code: z.string(),
+  message: z.string(),
+  data: z.object({
+    readinessScore: z.number().nonnegative(),
+    maxScore: z.number().int().positive(),
+    rirScore: z.number().nonnegative(),
+    rirMaxScore: z.number().int().positive(),
+    depositScore: z.number().nonnegative(),
+    depositMaxScore: z.number().int().positive(),
+    houseComparisonScore: z.number().int().nonnegative(),
+    houseComparisonMaxScore: z.number().int().positive(),
+    moveInDate: z.iso.date().nullable(),
+    movedInAt: z.string().nullable(),
+    independenceStatus: z.enum(['PREPARING', 'MOVE_IN_SCHEDULED', 'MOVED_IN']),
+  }),
+})
+
 const houseConfirmationRequestSchema = z.discriminatedUnion('confirmationType', [
   z.object({
     confirmationType: z.literal('COMPARISON'),
@@ -92,6 +111,12 @@ export async function getHouseComparisonProgress() {
   const response = await apiClient.get('/preparations/house-comparison')
 
   return houseComparisonProgressResponseSchema.parse(response.data).data
+}
+
+export async function getReadinessDiagnosis() {
+  const response = await apiClient.get('/preparations/readiness')
+
+  return readinessDiagnosisResponseSchema.parse(response.data).data
 }
 
 export async function confirmHouse(payload) {

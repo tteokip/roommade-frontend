@@ -12,6 +12,11 @@ const routes = [
     component: () => import('@/views/ReadinessView.vue'),
   },
   {
+    path: '/room/decorate',
+    name: 'room-decorate',
+    component: () => import('@/views/RoomDecorateView.vue'),
+  },
+  {
     path: '/house-comparisons',
     name: 'house-comparison',
     component: () => import('@/views/HouseComparisonView.vue'),
@@ -53,6 +58,18 @@ if (import.meta.env.DEV) {
     path: '/ui-preview',
     name: 'ui-preview',
     component: () => import('@/views/UiPreviewView.vue'),
+  })
+
+  routes.push({
+    path: '/room-layer-test',
+    name: 'room-layer-test',
+    component: () => import('@/views/RoomLayerTestView.vue'),
+  })
+
+  routes.push({
+    path: '/shop-layer-test',
+    name: 'shop-layer-test',
+    component: () => import('@/views/ShopLayerTestView.vue'),
   })
 }
 
