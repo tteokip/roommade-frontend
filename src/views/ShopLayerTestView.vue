@@ -25,8 +25,8 @@ const categories = [
 
 const variants = [
   { key: 'default', label: '기본' },
-  { key: 'warm-oak', label: '웜 오크' },
-  { key: 'cozy-cottage', label: '코지 코티지' },
+  { key: 'warm-oak', label: '내추럴 우드' },
+  { key: 'cozy-cottage', label: '로맨틱 코티지' },
 ]
 </script>
 

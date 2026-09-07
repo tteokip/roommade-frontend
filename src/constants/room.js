@@ -13,11 +13,12 @@ const roomThumbnailModules = import.meta.glob('@/assets/room-layer/thumbnails/*/
 
 export const ROOM_VARIANTS = [
   { key: 'default', label: '기본' },
-  { key: 'warm-oak', label: '웜 오크' },
-  { key: 'cozy-cottage', label: '코지 코티지' },
+  { key: 'warm-oak', label: '내추럴 우드' },
+  { key: 'cozy-cottage', label: '로맨틱 코티지' },
 ]
 
 const roomVariantKeys = new Set(ROOM_VARIANTS.map((variant) => variant.key))
+const roomVariantLabelByKey = new Map(ROOM_VARIANTS.map((variant) => [variant.key, variant.label]))
 
 export const ROOM_LAYER_DEFINITIONS = [
   {
@@ -130,10 +131,20 @@ export function resolveRoomLayer(furniture, fallbackVariant = 'default') {
     '/room-layer/thumbnails',
   )
 
+  // 백엔드 furniture.name은 "웜 오크 침대"처럼 예전 디자인 세트 이름을 그대로 담고 있을 수 있다.
+  // 화면에 보여줄 디자인 세트 이름은 항상 ROOM_VARIANTS 라벨 기준으로 다시 만든다.
+  const variantLabel = roomVariantLabelByKey.get(variant)
+  const name =
+    typeof furniture === 'string'
+      ? definition.label
+      : variant !== 'default' && variantLabel
+        ? `${variantLabel} ${definition.label}`
+        : furniture.name
+
   return {
     ...definition,
     furnitureId: typeof furniture === 'string' ? undefined : furniture.furnitureId,
-    name: typeof furniture === 'string' ? definition.label : furniture.name,
+    name,
     assetPath,
     variant,
     src,

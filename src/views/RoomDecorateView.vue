@@ -71,6 +71,7 @@ const designOptions = computed(() => {
 
       return {
         ...item,
+        name: presentation?.name ?? item.name,
         thumbnail: presentation?.thumbnailSrc,
         variant: presentation?.variant ?? 'default',
         active: item.placed,
