@@ -73,13 +73,14 @@ const layerTransformOverrides = {
   },
 }
 
-const activeImages = computed(() => variantImages[props.variant] ?? null)
-
-const activeOverrides = computed(() => layerTransformOverrides[props.variant] ?? {})
-
-const chairShadowClass = computed(() =>
-  props.variant === 'warm-oak' ? 'chair-leg-shadow chair-leg-shadow--warm-oak' : 'chair-leg-shadow',
-)
+// 가구 하나에 furniture.variant 가 있으면 그 값을, 없으면 RoomPreview 전체 기본값인
+// props.variant 를 그 가구의 디자인 세트로 쓴다. (방 꾸미기 화면처럼 가구별로 다른
+// 디자인 세트를 섞어 쓰는 경우를 위한 것 — 홈 화면처럼 방 전체에 세트 하나만 쓸 때는
+// props.variant 만 넘기면 된다.)
+function resolveItemVariant(furniture) {
+  if (typeof furniture === 'object' && furniture?.variant) return furniture.variant
+  return props.variant
+}
 
 const visibleLayers = computed(() => {
   const selectedLayers = new Map()
@@ -88,13 +89,18 @@ const visibleLayers = computed(() => {
     if (typeof furniture === 'object' && furniture.placed === false) return
 
     const layer = resolveRoomLayer(furniture)
-    if (layer) {
-      selectedLayers.set(layer.key, {
-        ...layer,
-        src: activeImages.value?.[layer.key] ?? layer.src,
-        layerClass: activeOverrides.value[layer.key] ?? `room-layer--${layer.key}`,
-      })
-    }
+    if (!layer) return
+
+    const itemVariant = resolveItemVariant(furniture)
+    const images = variantImages[itemVariant] ?? null
+    const overrides = layerTransformOverrides[itemVariant] ?? {}
+
+    selectedLayers.set(layer.key, {
+      ...layer,
+      variant: itemVariant,
+      src: images?.[layer.key] ?? layer.src,
+      layerClass: overrides[layer.key] ?? `room-layer--${layer.key}`,
+    })
   })
 
   return ROOM_LAYER_DEFINITIONS.map((definition) => selectedLayers.get(definition.key)).filter(
@@ -104,6 +110,11 @@ const visibleLayers = computed(() => {
 
 const selectedFurniture = computed(() => new Set(visibleLayers.value.map((layer) => layer.key)))
 const chairLayer = computed(() => visibleLayers.value.find((layer) => layer.key === 'chair'))
+const chairShadowClass = computed(() =>
+  chairLayer.value?.variant === 'warm-oak'
+    ? 'chair-leg-shadow chair-leg-shadow--warm-oak'
+    : 'chair-leg-shadow',
+)
 
 const roomDescription = computed(() => {
   const labels = visibleLayers.value.map((layer) => layer.label)
@@ -135,7 +146,7 @@ const roomDescription = computed(() => {
       />
       <img
         v-if="chairLayer"
-        key="chair-floor-shadow"
+        :key="`chair-floor-shadow:${chairLayer.variant}`"
         :src="chairLayer.src"
         :class="chairShadowClass"
         aria-hidden="true"
@@ -145,7 +156,7 @@ const roomDescription = computed(() => {
 
       <img
         v-for="layer in visibleLayers"
-        :key="layer.furnitureId ?? layer.key"
+        :key="layer.furnitureId ?? `${layer.key}:${layer.variant}`"
         :src="layer.src"
         alt=""
         aria-hidden="true"
