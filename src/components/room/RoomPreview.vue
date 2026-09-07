@@ -10,27 +10,118 @@ import plantImage from '@/assets/room-layer/pot-layer.png'
 import roomImage from '@/assets/room-layer/empty_room.png'
 import windowImage from '@/assets/room-layer/window-layer.png'
 
+import cozyBedImage from '@/assets/room-layer/cozy-cottage/bed-layer.png'
+import cozyChairImage from '@/assets/room-layer/cozy-cottage/chair-layer.png'
+import cozyClosetImage from '@/assets/room-layer/cozy-cottage/closet-layer.png'
+import cozyDeskImage from '@/assets/room-layer/cozy-cottage/desk-layer.png'
+import cozyLampImage from '@/assets/room-layer/cozy-cottage/lamp-layer.png'
+import cozyPlantImage from '@/assets/room-layer/cozy-cottage/pot-layer.png'
+import cozyWindowImage from '@/assets/room-layer/cozy-cottage/window-layer.png'
+
+import oakBedImage from '@/assets/room-layer/warm-oak/bed-layer.png'
+import oakChairImage from '@/assets/room-layer/warm-oak/chair-layer.png'
+import oakClosetImage from '@/assets/room-layer/warm-oak/closet-layer.png'
+import oakDeskImage from '@/assets/room-layer/warm-oak/desk-layer.png'
+import oakLampImage from '@/assets/room-layer/warm-oak/lamp-layer.png'
+import oakPlantImage from '@/assets/room-layer/warm-oak/pot-layer.png'
+import oakWindowImage from '@/assets/room-layer/warm-oak/window-layer.png'
+
 const props = defineProps({
   furniture: {
     type: Array,
     default: () => [],
   },
+  // 상점에서 고를 수 있는 가구 디자인 세트. 좌표는 'default' 기준으로 잡혀 있고,
+  // 새 세트를 추가할 때는 되도록 같은 좌표(같은 1254x1254 캔버스 안 같은 위치/크기)로 맞춰서
+  // room-layer--* 클래스를 그대로 재사용할 수 있게 하는 게 목표다. 원본 좌표가 많이 달라서
+  // 그대로 재사용할 수 없는 레이어만 layerTransformOverrides 에 variant별 클래스를 추가한다.
+  variant: {
+    type: String,
+    default: 'default',
+  },
 })
 
-const layers = [
-  { key: 'window', label: '창문', src: windowImage },
-  { key: 'closet', label: '옷장', src: closetImage },
-  { key: 'bed', label: '침대', src: bedImage },
-  { key: 'desk', label: '책상', src: deskImage },
-  { key: 'chair', label: '의자', src: chairImage },
-  { key: 'lamp', label: '조명', src: lampImage },
-  { key: 'plant', label: '화분', src: plantImage },
-]
+const variantImages = {
+  default: {
+    window: windowImage,
+    closet: closetImage,
+    bed: bedImage,
+    desk: deskImage,
+    chair: chairImage,
+    lamp: lampImage,
+    plant: plantImage,
+  },
+  'cozy-cottage': {
+    window: cozyWindowImage,
+    closet: cozyClosetImage,
+    bed: cozyBedImage,
+    desk: cozyDeskImage,
+    chair: cozyChairImage,
+    lamp: cozyLampImage,
+    plant: cozyPlantImage,
+  },
+  'warm-oak': {
+    window: oakWindowImage,
+    closet: oakClosetImage,
+    bed: oakBedImage,
+    desk: oakDeskImage,
+    chair: oakChairImage,
+    lamp: oakLampImage,
+    plant: oakPlantImage,
+  },
+}
+
+// variant 원본이 default와 같은 좌표로 그려지지 않은 레이어만 여기에 전용 클래스를 추가한다.
+// 없는 레이어는 room-layer--{key} 공용 클래스를 그대로 쓴다.
+const layerTransformOverrides = {
+  'cozy-cottage': {
+    bed: 'room-layer--bed-cozy-cottage',
+  },
+  'warm-oak': {
+    bed: 'room-layer--bed-warm-oak',
+    chair: 'room-layer--chair-warm-oak',
+    closet: 'room-layer--closet-warm-oak',
+    desk: 'room-layer--desk-warm-oak',
+    lamp: 'room-layer--lamp-warm-oak',
+    plant: 'room-layer--plant-warm-oak',
+    window: 'room-layer--window-warm-oak',
+  },
+}
+
+const layerLabels = {
+  window: '창문',
+  closet: '옷장',
+  bed: '침대',
+  desk: '책상',
+  chair: '의자',
+  lamp: '조명',
+  plant: '화분',
+}
+
+const layerOrder = ['window', 'closet', 'bed', 'desk', 'chair', 'lamp', 'plant']
+
+const activeImages = computed(() => variantImages[props.variant] ?? variantImages.default)
+
+const activeOverrides = computed(() => layerTransformOverrides[props.variant] ?? {})
+
+const layers = computed(() =>
+  layerOrder.map((key) => ({
+    key,
+    label: layerLabels[key],
+    src: activeImages.value[key],
+    layerClass: activeOverrides.value[key] ?? `room-layer--${key}`,
+  })),
+)
+
+const activeChairImage = computed(() => activeImages.value.chair)
+const chairShadowClass = computed(() =>
+  props.variant === 'warm-oak' ? 'chair-leg-shadow chair-leg-shadow--warm-oak' : 'chair-leg-shadow',
+)
 
 const selectedFurniture = computed(() => new Set(props.furniture))
 
 const visibleLayers = computed(() =>
-  layers.filter((layer) => selectedFurniture.value.has(layer.key)),
+  layers.value.filter((layer) => selectedFurniture.value.has(layer.key)),
 )
 
 const roomDescription = computed(() => {
@@ -64,8 +155,8 @@ const roomDescription = computed(() => {
       <img
         v-if="selectedFurniture.has('chair')"
         key="chair-floor-shadow"
-        :src="chairImage"
-        class="chair-leg-shadow"
+        :src="activeChairImage"
+        :class="chairShadowClass"
         aria-hidden="true"
         alt=""
         draggable="false"
@@ -78,15 +169,7 @@ const roomDescription = computed(() => {
         alt=""
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
-        :class="{
-          'room-layer--bed': layer.key === 'bed',
-          'room-layer--chair': layer.key === 'chair',
-          'room-layer--closet': layer.key === 'closet',
-          'room-layer--desk': layer.key === 'desk',
-          'room-layer--lamp': layer.key === 'lamp',
-          'room-layer--plant': layer.key === 'plant',
-          'room-layer--window': layer.key === 'window',
-        }"
+        :class="layer.layerClass"
         draggable="false"
       />
     </TransitionGroup>
@@ -109,9 +192,25 @@ const roomDescription = computed(() => {
   transform-origin: 51.1% 77.8%;
 }
 
+.room-layer--bed-cozy-cottage {
+  transform: translate(4.06%, 7.47%) scale(1.122, 1.233);
+  transform-origin: 51.1% 77.8%;
+}
+
+.room-layer--bed-warm-oak {
+  transform: translate(8.3%, 12.4%) scale(1.31, 1.34);
+  transform-origin: 51.1% 77.8%;
+}
+
 .room-layer--lamp {
   filter: drop-shadow(-2px 3px 2px rgb(91 71 57 / 18%));
   transform: translate(-8%, 10%) scale(0.9);
+  transform-origin: center;
+}
+
+.room-layer--lamp-warm-oak {
+  filter: drop-shadow(-2px 3px 2px rgb(91 71 57 / 18%));
+  transform: translate(-6.24%, 9.12%) scale(0.893, 0.803);
   transform-origin: center;
 }
 
@@ -122,10 +221,24 @@ const roomDescription = computed(() => {
   transform-origin: center;
 }
 
+.room-layer--plant-warm-oak {
+  filter: drop-shadow(4px 1px 2px rgb(91 71 57 / 32%)) drop-shadow(0 5px 2px rgb(91 71 57 / 28%))
+    drop-shadow(4px 6px 4px rgb(91 71 57 / 14%));
+  transform: translate(23.91%, -11.41%) scale(0.475, 0.529);
+  transform-origin: center;
+}
+
 .room-layer--closet {
   filter: drop-shadow(3px 1px 2px rgb(91 71 57 / 24%)) drop-shadow(5px 2px 5px rgb(91 71 57 / 9%))
     drop-shadow(-2px 4px 3px rgb(91 71 57 / 12%));
   transform: translate(-20.5%, -2.25%) scale(0.92);
+  transform-origin: center;
+}
+
+.room-layer--closet-warm-oak {
+  filter: drop-shadow(3px 1px 2px rgb(91 71 57 / 24%)) drop-shadow(5px 2px 5px rgb(91 71 57 / 9%))
+    drop-shadow(-2px 4px 3px rgb(91 71 57 / 12%));
+  transform: translate(-20.49%, 1.32%) scale(0.93, 1.011);
   transform-origin: center;
 }
 
@@ -139,8 +252,19 @@ const roomDescription = computed(() => {
   filter: drop-shadow(2px 3px 2px rgb(91 71 57 / 18%));
 }
 
+.room-layer--desk-warm-oak {
+  filter: drop-shadow(2px 3px 2px rgb(91 71 57 / 18%));
+  transform: translate(-0.05%, -5.78%) matrix(0.868, 0.0784, 0, 0.992, 0, 0);
+  transform-origin: 90% 67%;
+}
+
 .room-layer--chair {
   transform: translate(-8%, -3.5%) matrix(0.72, 0.065, 0, 0.72, 0, 0);
+}
+
+.room-layer--chair-warm-oak {
+  transform: translate(-2.74%, -11.25%) matrix(0.931, 0.0841, 0, 1.013, 0, 0);
+  transform-origin: 90% 67%;
 }
 
 .chair-leg-shadow {
@@ -153,6 +277,11 @@ const roomDescription = computed(() => {
   clip-path: inset(72% 13% 8% 57%);
   filter: brightness(0) opacity(30%) blur(2px);
   transform: translate(-7.6%, -2.2%) matrix(0.72, 0.065, 0, 0.72, 0, 0);
+  transform-origin: 90% 67%;
+}
+
+.chair-leg-shadow--warm-oak {
+  transform: translate(-2.74%, -11.25%) matrix(0.931, 0.0841, 0, 1.013, 0, 0);
   transform-origin: 90% 67%;
 }
 
@@ -178,6 +307,13 @@ const roomDescription = computed(() => {
   filter: drop-shadow(-2px 3px 2px rgb(91 71 57 / 28%))
     drop-shadow(-5px 7px 6px rgb(91 71 57 / 14%));
   transform: translate(-1.8%, -2.2%) matrix(0.96, -0.14, 0, 0.7, 0, 0);
+  transform-origin: 29.5% 33.6%;
+}
+
+.room-layer--window-warm-oak {
+  filter: drop-shadow(-2px 3px 2px rgb(91 71 57 / 28%))
+    drop-shadow(-5px 7px 6px rgb(91 71 57 / 14%));
+  transform: translate(-1.8%, -0.13%) matrix(0.951, -0.1387, 0, 0.807, 0, 0);
   transform-origin: 29.5% 33.6%;
 }
 

@@ -28,6 +28,13 @@ const presets = [
 
 const selectedFurniture = ref([])
 
+const variantOptions = [
+  { key: 'default', label: '기본' },
+  { key: 'cozy-cottage', label: '코지 코티지' },
+  { key: 'warm-oak', label: '웜 오크' },
+]
+const selectedVariant = ref('default')
+
 const activePresetKey = computed(
   () =>
     presets.find(
@@ -63,10 +70,28 @@ function applyPreset(preset) {
 
       <div class="space-y-5">
         <AppCard padding="sm">
-          <RoomPreview :furniture="selectedFurniture" />
+          <RoomPreview :furniture="selectedFurniture" :variant="selectedVariant" />
           <p class="mt-4 text-center text-sm font-bold text-ink" aria-live="polite">
             현재 배치: {{ placementText }}
           </p>
+        </AppCard>
+
+        <AppCard padding="sm">
+          <fieldset>
+            <legend class="text-base font-extrabold text-ink">디자인 세트 (상점 미리보기)</legend>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <AppButton
+                v-for="option in variantOptions"
+                :key="option.key"
+                size="xs"
+                :variant="selectedVariant === option.key ? 'selected' : 'outline'"
+                :aria-pressed="selectedVariant === option.key"
+                @click="selectedVariant = option.key"
+              >
+                {{ option.label }}
+              </AppButton>
+            </div>
+          </fieldset>
         </AppCard>
 
         <AppCard padding="sm">
