@@ -17,6 +17,12 @@ const routes = [
     component: () => import('@/views/RoomDecorateView.vue'),
   },
   {
+    path: '/room/shop',
+    name: 'furniture-shop',
+    component: () => import('@/views/FurnitureShopView.vue'),
+    meta: { tab: 'home' },
+  },
+  {
     path: '/house-comparisons',
     name: 'house-comparison',
     component: () => import('@/views/HouseComparisonView.vue'),
