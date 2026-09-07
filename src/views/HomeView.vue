@@ -4,12 +4,14 @@ import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
 import { furnitureRewardsQueryKey, getFurnitureRewards, getRoom, roomQueryKey } from '@/api/room'
+import shareIcon from '@/assets/share-icon.png'
 import { getTodayQuiz, submitTodayQuizAnswer } from '@/api/quiz'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
 import DailyQuizCard from '@/components/quiz/DailyQuizCard.vue'
 import DailyQuizSheet from '@/components/quiz/DailyQuizSheet.vue'
 import FurnitureRewardBanner from '@/components/readiness/FurnitureRewardBanner.vue'
 import RoomPreview from '@/components/room/RoomPreview.vue'
+import RoomShareSheet from '@/components/room/RoomShareSheet.vue'
 
 const router = useRouter()
 
@@ -41,6 +43,7 @@ const {
 const pendingFurnitureRewardCount = computed(() => furnitureRewards.value?.length ?? 0)
 
 const isQuizOpen = ref(false)
+const isRoomShareOpen = ref(false)
 const todayQuiz = ref(null)
 const quizResult = ref(null)
 const isQuizLoading = ref(false)
@@ -81,6 +84,15 @@ function openRoomDecorate() {
 
 function openShop() {
   router.push({ name: 'furniture-shop' })
+}
+
+function openRoomShare() {
+  isRoomShareOpen.value = true
+}
+
+const shareIconStyle = {
+  maskImage: `url(${shareIcon})`,
+  WebkitMaskImage: `url(${shareIcon})`,
 }
 </script>
 
@@ -159,18 +171,13 @@ function openShop() {
             :disabled="isRoomPending || isRoomError"
             class="absolute right-3 top-3 z-20 flex size-12 items-center justify-center rounded-full border border-line bg-white text-brand-primary shadow-card transition-transform active:scale-95"
             aria-label="내 방 공유하기"
+            @click="openRoomShare"
           >
-            <svg
+            <span
               aria-hidden="true"
-              viewBox="0 0 24 24"
-              class="size-6 fill-none stroke-current"
-              stroke-width="2.2"
-            >
-              <circle cx="18" cy="5" r="2.5" />
-              <circle cx="6" cy="12" r="2.5" />
-              <circle cx="18" cy="19" r="2.5" />
-              <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
-            </svg>
+              class="block size-6 bg-brand-primary [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]"
+              :style="shareIconStyle"
+            />
           </button>
 
           <div class="mt-4 grid grid-cols-2 gap-3 px-2">
@@ -215,6 +222,12 @@ function openShop() {
       :is-error="isQuizError"
       @retry="openQuiz"
       @submit="submitQuiz"
+    />
+
+    <RoomShareSheet
+      v-model="isRoomShareOpen"
+      :furniture="placedFurniture"
+      :readiness-score="room?.readinessScore ?? 0"
     />
   </div>
 </template>
