@@ -45,7 +45,7 @@ watch(
   () => readinessDiagnosis.value?.independenceStatus,
   (status) => {
     if (status === 'MOVED_IN') {
-      router.replace({ name: 'dailyLife' })
+      router.replace({ name: 'dailyLife', query: { intro: '1' } })
     }
   },
   { immediate: true },

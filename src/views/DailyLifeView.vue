@@ -174,25 +174,41 @@ function submitMonthlyRent() {
   setMonthlyRent.mutate(amount)
 }
 // 독립진단(readiness) 페이지에서 "독립 전 → 독립 후"로 넘어올 때 ?intro=1 로 진입하면
-// 스포트라이트 2단계 소개를 보여준다. 그 외에는 바로 일반 화면으로 보여준다.
+// 각 생활관리 카드를 차례로 소개한다. 그 외에는 바로 일반 화면으로 보여준다.
 const spendingCardEl = ref(null)
-const restSectionEl = ref(null)
-const introTargets = [spendingCardEl, restSectionEl]
+const dailyChallengeCardEl = ref(null)
+const emergencyFundCardEl = ref(null)
+const rirCardEl = ref(null)
+const introTargets = [spendingCardEl, dailyChallengeCardEl, emergencyFundCardEl, rirCardEl]
 const introCopy = [
-  { title: '생활비 현황', desc: '이번 달 지출과 예산을 한눈에 확인할 수 있어요.' },
   {
-    title: '일간 챌린지 · 비상금 · 월세 RIR',
-    desc: '목표를 채우며 코인을 모으고, 독립생활에 필요한 정보를 관리해요.',
+    title: '생활비 현황',
+    desc: '지난달 대비 이번 달 지출 현황을 비교해서\n 한 눈에 확인할 수 있어요.',
+  },
+  {
+    title: '매일 챌린지',
+    desc: '소비를 줄여 챌린지를 달성하면 코인을 받을 수 있어요.\n 모은 코인은 방꾸미기 상점에서 사용할 수 있어요.',
+  },
+  {
+    title: '비상금',
+    desc: '비상금 목표를 설정하고 달성하면 코인을 받을 수 있어요.',
+  },
+  {
+    title: '월세 RIR',
+    desc: '독립 후에도 월세 RIR을 확인할 수 있어요.\n 계산공식은 i를 눌러 확인할 수 있어요.',
   },
 ]
-const introStep = ref(route.query.intro === '1' ? 0 : null)
+const INTRO_WELCOME_STEP = -1
+const introStep = ref(route.query.intro === '1' ? INTRO_WELCOME_STEP : null)
 const spotlightRect = ref(null)
+let introScrollTimer = null
 
 function updateSpotlightRect() {
   if (introStep.value === null) return
   const target = introTargets[introStep.value].value
-  if (!target) return
-  const rect = target.getBoundingClientRect()
+  const targetElement = target?.$el ?? target
+  if (!targetElement) return
+  const rect = targetElement.getBoundingClientRect()
   spotlightRect.value = {
     top: rect.top - 8,
     left: rect.left - 8,
@@ -201,19 +217,41 @@ function updateSpotlightRect() {
   }
 }
 
+function focusIntroTarget(behavior = 'smooth') {
+  if (introStep.value === null || introStep.value === INTRO_WELCOME_STEP) return
+  const target = introTargets[introStep.value].value
+  const targetElement = target?.$el ?? target
+  if (!targetElement) return
+
+  spotlightRect.value = null
+  const rect = targetElement.getBoundingClientRect()
+  window.scrollTo({
+    top: Math.max(0, window.scrollY + rect.top - 16),
+    behavior,
+  })
+
+  clearTimeout(introScrollTimer)
+  introScrollTimer = setTimeout(updateSpotlightRect, behavior === 'smooth' ? 350 : 0)
+}
+
+function startIntro() {
+  introStep.value = 0
+  nextTick(() => focusIntroTarget('auto'))
+}
+
 function advanceIntro() {
   if (introStep.value === null) return
   if (introStep.value < introTargets.length - 1) {
     introStep.value += 1
-    nextTick(updateSpotlightRect)
+    nextTick(focusIntroTarget)
   } else {
     introStep.value = null
   }
 }
 
 watch(isPageLoading, (loading) => {
-  if (!loading && introStep.value !== null) {
-    nextTick(updateSpotlightRect)
+  if (!loading && introStep.value !== null && introStep.value !== INTRO_WELCOME_STEP) {
+    nextTick(() => focusIntroTarget('auto'))
   }
 })
 
@@ -222,13 +260,16 @@ onMounted(() => {
     now.value = new Date()
   }, 1000)
   if (introStep.value !== null) {
-    nextTick(updateSpotlightRect)
+    if (introStep.value !== INTRO_WELCOME_STEP) {
+      nextTick(() => focusIntroTarget('auto'))
+    }
     window.addEventListener('resize', updateSpotlightRect)
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateSpotlightRect)
+  clearTimeout(introScrollTimer)
   clearInterval(clockTimer)
 })
 </script>
@@ -238,7 +279,7 @@ onBeforeUnmount(() => {
     <AppHeader title="독립생활" mode="back" @back="router.back()" />
 
     <BottomTabLayout>
-      <main class="mx-auto max-w-md px-4 pb-6 pt-4">
+      <main class="mx-auto max-w-md px-4 pt-4" :class="introStep !== null ? 'pb-[70vh]' : 'pb-6'">
         <LoadingState v-if="isPageLoading" message="독립생활 정보를 불러오는 중이에요." />
         <ErrorState v-else-if="isPageError" @retry="retryAll" />
 
@@ -307,8 +348,8 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <div ref="restSectionEl" class="flex flex-col gap-4">
-            <AppCard padding="sm">
+          <div class="flex flex-col gap-4">
+            <AppCard ref="dailyChallengeCardEl" padding="sm">
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
@@ -453,7 +494,7 @@ onBeforeUnmount(() => {
               </AccordionItem>
             </AppCard>
 
-            <AppCard padding="sm">
+            <AppCard ref="emergencyFundCardEl" padding="sm">
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
@@ -552,7 +593,7 @@ onBeforeUnmount(() => {
               </AccordionItem>
             </AppCard>
 
-            <AppCard v-if="rirDiagnosis?.state !== 'ready'" padding="sm">
+            <AppCard v-if="rirDiagnosis?.state !== 'ready'" ref="rirCardEl" padding="sm">
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
@@ -625,6 +666,7 @@ onBeforeUnmount(() => {
 
             <RirDiagnosisCard
               v-if="rirDiagnosis?.state === 'ready'"
+              ref="rirCardEl"
               :diagnosis="rirDiagnosis.diagnosis"
             />
           </div>
@@ -654,6 +696,20 @@ onBeforeUnmount(() => {
     />
 
     <div
+      v-if="introStep === INTRO_WELCOME_STEP"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,5,30,0.75)] px-5"
+    >
+      <div class="w-full max-w-[350px] rounded-2xl bg-white p-5 text-center shadow-floating">
+        <p class="mb-2 text-lg font-extrabold text-brand-primary">안녕하세요!</p>
+        <p class="mb-5 text-sm leading-6 text-body">
+          독립 후 페이지에 오신 걸 환영합니다.<br />
+          간단히 페이지를 소개해드릴게요.
+        </p>
+        <AppButton size="sm" full-width @click="startIntro">시작하기</AppButton>
+      </div>
+    </div>
+
+    <div
       v-if="introStep !== null && spotlightRect"
       class="fixed inset-0 z-50"
       @click="advanceIntro"
@@ -675,7 +731,9 @@ onBeforeUnmount(() => {
         <p class="mb-1 text-sm font-extrabold text-brand-primary">
           {{ introCopy[introStep].title }}
         </p>
-        <p class="mb-4 text-sm text-body">{{ introCopy[introStep].desc }}</p>
+        <p class="mb-4 whitespace-pre-line text-sm text-body">
+          {{ introCopy[introStep].desc }}
+        </p>
         <AppButton size="sm" full-width @click.stop="advanceIntro">
           {{ introStep < introTargets.length - 1 ? '다음' : '확인' }}
         </AppButton>
