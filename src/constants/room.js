@@ -82,6 +82,11 @@ function getAssetFileName(assetUrl) {
 export function resolveRoomLayer(furniture) {
   if (typeof furniture === 'string') return roomLayerByKey.get(furniture) ?? null
 
+  // 백엔드 연동 전 프런트 목업(예: 방 꾸미기 모드)에서 { key, variant } 형태로 넘기는 경우.
+  if (furniture?.key && !furniture?.categoryName) {
+    return roomLayerByKey.get(furniture.key) ?? null
+  }
+
   const definition = roomLayerByCategory.get(furniture?.categoryName)
   if (!definition) return null
 
