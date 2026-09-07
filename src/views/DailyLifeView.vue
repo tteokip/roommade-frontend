@@ -114,7 +114,6 @@ const challengeThresholds = computed(() => {
     level: lv.level,
     maxSpending: lv.maxSpending,
     percent: ((index + 1) / levels.length) * 100,
-    isLast: index === levels.length - 1,
   }))
 })
 // 자정까지 남은 시간 카운트다운 (매일 00:00 초기화 규칙과 맞춤)
@@ -408,7 +407,7 @@ onBeforeUnmount(() => {
                         </div>
                       </div>
 
-                      <div class="mt-5">
+                      <div class="mr-5 mt-5">
                         <div class="relative h-1.5 rounded-full bg-gray-200">
                           <div
                             class="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-300 to-brand-primary"
@@ -432,11 +431,8 @@ onBeforeUnmount(() => {
                           <span
                             v-for="threshold in challengeThresholds"
                             :key="threshold.level"
-                            class="absolute whitespace-nowrap text-[10px] font-medium text-muted"
-                            :class="threshold.isLast ? 'right-0' : '-translate-x-1/2'"
-                            :style="
-                              threshold.isLast ? undefined : { left: `${threshold.percent}%` }
-                            "
+                            class="absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-medium text-muted"
+                            :style="{ left: `${threshold.percent}%` }"
                           >
                             {{ threshold.maxSpending.toLocaleString() }}원
                           </span>
@@ -446,12 +442,11 @@ onBeforeUnmount(() => {
                   </div>
 
                   <div
-                    class="mt-3.5 flex items-center justify-center gap-1.5 rounded-[10px] border border-violet-100 bg-violet-50 px-3.5 py-2.5 text-center"
+                    class="mt-3.5 flex items-center justify-start gap-2 rounded-[10px] border border-violet-100 bg-violet-50 px-3.5 py-2.5 text-left"
                   >
                     <span class="text-[13px]">💡</span>
-                    <p class="text-[11px] font-medium leading-relaxed text-muted">
-                      매일 00:00에 챌린지가 초기화돼요.<br />
-                      지출 내역은 자정 기준으로 집계돼요.
+                    <p class="text-[11px] font-medium leading-relaxed text-ink">
+                      매일 00:00에 챌린지가 초기화돼요. 지출 내역은 자정 기준으로 집계돼요.
                     </p>
                   </div>
                 </div>
