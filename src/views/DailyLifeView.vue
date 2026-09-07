@@ -114,6 +114,7 @@ const challengeThresholds = computed(() => {
     level: lv.level,
     maxSpending: lv.maxSpending,
     percent: ((index + 1) / levels.length) * 100,
+    isLast: index === levels.length - 1,
   }))
 })
 // 자정까지 남은 시간 카운트다운 (매일 00:00 초기화 규칙과 맞춤)
@@ -431,8 +432,11 @@ onBeforeUnmount(() => {
                           <span
                             v-for="threshold in challengeThresholds"
                             :key="threshold.level"
-                            class="absolute -translate-x-1/2 whitespace-nowrap text-[10px] font-medium text-muted"
-                            :style="{ left: `${threshold.percent}%` }"
+                            class="absolute whitespace-nowrap text-[10px] font-medium text-muted"
+                            :class="threshold.isLast ? 'right-0' : '-translate-x-1/2'"
+                            :style="
+                              threshold.isLast ? undefined : { left: `${threshold.percent}%` }
+                            "
                           >
                             {{ threshold.maxSpending.toLocaleString() }}원
                           </span>

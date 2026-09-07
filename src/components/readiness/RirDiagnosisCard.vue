@@ -65,18 +65,21 @@ const markerLabelStyle = computed(() => ({
 }))
 
 const guidance = computed(() => {
-  if (props.diagnosis.requiredRentReduction === 0) {
+  if (props.diagnosis.status === 'NORMAL') {
     return {
       message: '현재 월세 수준이면 목표 RIR을 달성할 수 있어요!',
-      reductionAmount: null,
-      targetPercent: null,
+      requiredMonthlyIncome: null,
     }
   }
 
+  const targetRatio = props.diagnosis.targetRirPercent / 100
+  const requiredMonthlyIncome = targetRatio
+    ? Math.ceil(props.diagnosis.expectedMonthlyRent / targetRatio / 10_000) * 10_000
+    : 0
+
   return {
     message: null,
-    reductionAmount: formatAmount(props.diagnosis.requiredRentReduction),
-    targetPercent: `${formatNumber(props.diagnosis.targetRirPercent)}%`,
+    requiredMonthlyIncome: formatAmount(requiredMonthlyIncome),
   }
 })
 
@@ -213,12 +216,12 @@ function formatAmount(value) {
               <p class="text-[clamp(0.6875rem,3vw,0.8125rem)] leading-5 text-body">
                 <template v-if="guidance.message">{{ guidance.message }}</template>
                 <template v-else>
-                  {{ '월세를 '
+                  {{ '월 소득을 '
                   }}<span class="text-sm font-extrabold text-brand-primary">{{
-                    guidance.reductionAmount
+                    guidance.requiredMonthlyIncome
                   }}</span
-                  >{{ ' 낮추면' }}<br />
-                  {{ `RIR ${guidance.targetPercent} 이하로 달성할 수 있어요!` }}
+                  >{{ ' 이상으로 높이면' }}<br />
+                  {{ `RIR ${formatNumber(diagnosis.targetRirPercent)}%를 달성할 수 있어요!` }}
                 </template>
               </p>
             </div>
