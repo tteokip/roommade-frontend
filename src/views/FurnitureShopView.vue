@@ -90,9 +90,11 @@ const purchaseMutation = useMutation({
     queryClient.invalidateQueries({ queryKey: shopFurnitureQueryKey() })
     queryClient.invalidateQueries({ queryKey: coinBalanceQueryKey })
     queryClient.invalidateQueries({ queryKey: roomQueryKey })
+    const layer = resolveRoomLayer(purchased)
     purchasedItem.value = {
       ...purchased,
-      thumbnail: resolveRoomLayer(purchased)?.thumbnailSrc,
+      name: layer?.name ?? purchased.name,
+      thumbnail: layer?.thumbnailSrc,
       price: variables.coinPrice,
     }
   },
