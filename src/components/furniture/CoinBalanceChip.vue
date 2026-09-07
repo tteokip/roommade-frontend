@@ -25,7 +25,7 @@ const displayText = computed(() => {
 
 <template>
   <span
-    class="flex items-center gap-1 whitespace-nowrap rounded-pill bg-amber-50 px-3 py-1.5 text-sm font-extrabold text-amber-600"
+    class="flex h-9 items-center gap-1 whitespace-nowrap rounded-pill bg-amber-50 px-3 text-sm font-extrabold text-amber-600"
     :role="isError ? 'alert' : 'status'"
   >
     <span aria-hidden="true">🪙</span>

@@ -1,4 +1,6 @@
 <script setup>
+import FurnitureTicketIcon from './FurnitureTicketIcon.vue'
+
 defineProps({
   name: {
     type: String,
@@ -28,6 +30,14 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  fluid: {
+    type: Boolean,
+    default: false,
+  },
+  ticketCost: {
+    type: Number,
+    default: null,
+  },
 })
 
 defineEmits(['select'])
@@ -36,8 +46,9 @@ defineEmits(['select'])
 <template>
   <button
     type="button"
-    class="w-28 shrink-0 rounded-control border p-3 text-center transition-colors disabled:cursor-not-allowed"
+    class="rounded-control border p-3 text-center transition-colors disabled:cursor-not-allowed"
     :class="[
+      fluid ? 'w-full min-w-0' : 'w-28 shrink-0',
       selected ? 'border-brand-primary-dark bg-brand-primary-soft' : 'border-line bg-white',
       locked && 'opacity-60',
     ]"
@@ -70,7 +81,17 @@ defineEmits(['select'])
     </div>
 
     <p class="mt-2 truncate text-xs font-extrabold text-ink">{{ name }}</p>
-    <p v-if="price != null" class="mt-0.5 text-[11px] font-bold text-amber-600">
+    <span
+      v-if="ticketCost != null"
+      class="mt-1.5 flex min-h-7 items-center justify-center gap-1 rounded-lg bg-brand-primary px-1.5 text-[11px] font-extrabold text-white"
+    >
+      해금하기
+      <span class="grid size-5 place-items-center rounded bg-white">
+        <FurnitureTicketIcon :size="18" />
+      </span>
+      {{ ticketCost }}
+    </span>
+    <p v-else-if="price != null" class="mt-0.5 text-[11px] font-bold text-amber-600">
       🪙 {{ price.toLocaleString() }}P
     </p>
     <p

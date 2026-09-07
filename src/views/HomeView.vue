@@ -78,6 +78,10 @@ async function submitQuiz(selectedChoiceId) {
 function openRoomDecorate() {
   router.push({ name: 'room-decorate' })
 }
+
+function openShop() {
+  router.push({ name: 'furniture-shop' })
+}
 </script>
 
 <template>
@@ -183,6 +187,7 @@ function openRoomDecorate() {
             <button
               type="button"
               class="relative flex min-h-14 items-center justify-center gap-2 rounded-pill border border-line bg-white px-4 text-base font-extrabold text-body shadow-card transition-transform active:scale-[0.98]"
+              @click="openShop"
             >
               <span class="text-2xl" aria-hidden="true">🛍️</span>
               <span>상점</span>
