@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
@@ -50,9 +50,9 @@ const isQuizLoading = ref(false)
 const isQuizSubmitting = ref(false)
 const isQuizError = ref(false)
 
-async function openQuiz() {
-  isQuizOpen.value = true
-  quizResult.value = null
+const isQuizCompleted = computed(() => todayQuiz.value?.attempted || quizResult.value !== null)
+
+async function fetchTodayQuiz() {
   isQuizLoading.value = true
   isQuizError.value = false
 
@@ -64,6 +64,14 @@ async function openQuiz() {
     isQuizLoading.value = false
   }
 }
+
+async function openQuiz() {
+  isQuizOpen.value = true
+  quizResult.value = null
+  await fetchTodayQuiz()
+}
+
+onMounted(fetchTodayQuiz)
 
 async function submitQuiz(selectedChoiceId) {
   isQuizSubmitting.value = true
@@ -209,7 +217,7 @@ const shareIconStyle = {
           </div>
         </section>
 
-        <DailyQuizCard @start="openQuiz" />
+        <DailyQuizCard :completed="isQuizCompleted" @start="openQuiz" />
       </main>
     </BottomTabLayout>
 
