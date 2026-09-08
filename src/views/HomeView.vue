@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
 import { furnitureRewardsQueryKey, getFurnitureRewards, getRoom, roomQueryKey } from '@/api/room'
+import roommadeMark from '@/assets/roommade-mark.svg'
 import shareIcon from '@/assets/share-icon.png'
 import { getTodayQuiz, submitTodayQuizAnswer } from '@/api/quiz'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
@@ -100,7 +101,8 @@ const shareIconStyle = {
   <div class="min-h-screen bg-page">
     <BottomTabLayout>
       <main class="mx-auto flex min-h-[calc(100vh-75px)] max-w-md flex-col gap-5 px-4 pb-6 pt-6">
-        <header class="py-2 pl-[5.2%] text-left">
+        <header class="flex items-center gap-2 py-2 text-left">
+          <img :src="roommadeMark" alt="" class="size-12 shrink-0" aria-hidden="true" />
           <h1 class="text-4xl font-black tracking-[-0.06em] text-ink">룸메이드</h1>
         </header>
 
