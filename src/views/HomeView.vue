@@ -1,18 +1,27 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 
 import { furnitureRewardsQueryKey, getFurnitureRewards, getRoom, roomQueryKey } from '@/api/room'
+import { fetchLatestChallengeResult } from '@/api/living'
 import roommadeMark from '@/assets/roommade-mark.svg'
 import shareIcon from '@/assets/share-icon.png'
 import { getTodayQuiz, submitTodayQuizAnswer } from '@/api/quiz'
 import BottomTabLayout from '@/components/layout/BottomTabLayout.vue'
+import ChallengeNotificationSheet from '@/components/notification/ChallengeNotificationSheet.vue'
+import ChallengeRewardToast from '@/components/notification/ChallengeRewardToast.vue'
+import NotificationBellIcon from '@/components/notification/NotificationBellIcon.vue'
 import DailyQuizCard from '@/components/quiz/DailyQuizCard.vue'
 import DailyQuizSheet from '@/components/quiz/DailyQuizSheet.vue'
 import FurnitureRewardBanner from '@/components/readiness/FurnitureRewardBanner.vue'
 import RoomPreview from '@/components/room/RoomPreview.vue'
 import RoomShareSheet from '@/components/room/RoomShareSheet.vue'
+import {
+  loadChallengeNotifications,
+  markAllChallengeNotificationsRead,
+  recordChallengeReward,
+} from '@/utils/challengeNotifications'
 
 const router = useRouter()
 
@@ -45,11 +54,50 @@ const pendingFurnitureRewardCount = computed(() => furnitureRewards.value?.lengt
 
 const isQuizOpen = ref(false)
 const isRoomShareOpen = ref(false)
+const isNotificationSheetOpen = ref(false)
+const challengeNotifications = ref(loadChallengeNotifications())
+const rewardToast = ref(null)
 const todayQuiz = ref(null)
 const quizResult = ref(null)
 const isQuizLoading = ref(false)
 const isQuizSubmitting = ref(false)
 const isQuizError = ref(false)
+let rewardToastTimer = null
+
+const { data: latestChallengeResult } = useQuery({
+  queryKey: ['dailyChallenge', 'latestResult'],
+  queryFn: fetchLatestChallengeResult,
+  retry: 1,
+})
+
+const unreadNotificationCount = computed(
+  () => challengeNotifications.value.filter((notification) => !notification.read).length,
+)
+
+function closeRewardToast() {
+  rewardToast.value = null
+  if (rewardToastTimer) window.clearTimeout(rewardToastTimer)
+  rewardToastTimer = null
+}
+
+watch(
+  latestChallengeResult,
+  (result) => {
+    const recorded = recordChallengeReward(result)
+    challengeNotifications.value = recorded.notifications
+    if (!recorded.isNew) return
+
+    rewardToast.value = recorded.notification
+    if (rewardToastTimer) window.clearTimeout(rewardToastTimer)
+    rewardToastTimer = window.setTimeout(closeRewardToast, 4500)
+  },
+  { immediate: true },
+)
+
+function openNotifications() {
+  challengeNotifications.value = markAllChallengeNotificationsRead(challengeNotifications.value)
+  isNotificationSheetOpen.value = true
+}
 
 const isQuizCompleted = computed(() => todayQuiz.value?.attempted || quizResult.value !== null)
 
@@ -103,15 +151,36 @@ const shareIconStyle = {
   maskImage: `url(${shareIcon})`,
   WebkitMaskImage: `url(${shareIcon})`,
 }
+
+onBeforeUnmount(() => {
+  if (rewardToastTimer) window.clearTimeout(rewardToastTimer)
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-page">
     <BottomTabLayout>
       <main class="mx-auto flex min-h-[calc(100vh-75px)] max-w-md flex-col gap-5 px-4 pb-6 pt-6">
-        <header class="flex items-center gap-2 py-2 text-left">
-          <img :src="roommadeMark" alt="" class="size-12 shrink-0" aria-hidden="true" />
-          <h1 class="text-4xl font-black tracking-[-0.06em] text-ink">룸메이드</h1>
+        <header class="flex items-center justify-between gap-3 py-2 text-left">
+          <div class="flex min-w-0 items-center gap-2">
+            <img :src="roommadeMark" alt="" class="size-12 shrink-0" aria-hidden="true" />
+            <h1 class="text-4xl font-black tracking-[-0.06em] text-ink">룸메이드</h1>
+          </div>
+          <button
+            type="button"
+            class="relative grid size-11 shrink-0 place-items-center rounded-full border border-line bg-white text-brand-primary shadow-card transition-transform active:scale-95"
+            aria-label="알림 보기"
+            @click="openNotifications"
+          >
+            <NotificationBellIcon class="size-6" />
+            <span
+              v-if="unreadNotificationCount > 0"
+              class="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-danger px-1 text-[10px] font-extrabold text-white"
+              :aria-label="`읽지 않은 알림 ${unreadNotificationCount}개`"
+            >
+              {{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}
+            </span>
+          </button>
         </header>
 
         <div v-if="isFurnitureRewardsPending" role="status">
@@ -239,5 +308,12 @@ const shareIconStyle = {
       :furniture="placedFurniture"
       :readiness-score="room?.readinessScore ?? 0"
     />
+
+    <ChallengeNotificationSheet
+      v-model="isNotificationSheetOpen"
+      :notifications="challengeNotifications"
+    />
+
+    <ChallengeRewardToast :notification="rewardToast" @close="closeRewardToast" />
   </div>
 </template>
