@@ -21,6 +21,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        // 백엔드가 발급한 JSESSIONID를 프론트 개발 서버(localhost)의 쿠키로 유지한다.
+        cookieDomainRewrite: '',
+        cookiePathRewrite: '/',
       },
     },
   },
