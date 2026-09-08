@@ -20,6 +20,7 @@ import MoveInScheduledPanel from '@/components/readiness/MoveInScheduledPanel.vu
 import ReadinessSummaryCard from '@/components/readiness/ReadinessSummaryCard.vue'
 import RirDiagnosisCard from '@/components/readiness/RirDiagnosisCard.vue'
 import { AppHeader, EmptyState, ErrorState, LoadingState } from '@/shared/ui'
+import { hasCompletedDailyLifeIntro } from '@/utils/dailyLifeIntro'
 
 const router = useRouter()
 const queryClient = useQueryClient()
@@ -57,11 +58,17 @@ const {
 
 const pendingFurnitureRewardCount = computed(() => furnitureRewards.value?.length ?? 0)
 
+function dailyLifeRoute() {
+  return hasCompletedDailyLifeIntro()
+    ? { name: 'dailyLife' }
+    : { name: 'dailyLife', query: { intro: '1' } }
+}
+
 watch(
   () => readinessDiagnosis.value?.independenceStatus,
   (status) => {
     if (status === 'MOVED_IN') {
-      router.replace({ name: 'dailyLife', query: { intro: '1' } })
+      router.replace(dailyLifeRoute())
     }
   },
   { immediate: true },
@@ -125,7 +132,7 @@ const confirmHouseMutation = useMutation({
     ])
 
     if (confirmation.independenceStatus === 'MOVED_IN') {
-      router.push({ name: 'dailyLife', query: { intro: '1' } })
+      router.push(dailyLifeRoute())
       await refreshQueries
       return
     }
