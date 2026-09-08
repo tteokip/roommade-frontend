@@ -117,7 +117,7 @@ const markerPosition = computed(() => {
 </script>
 
 <template>
-  <AppCard padding="sm">
+  <AppCard padding="sm" variant="outlined">
     <AccordionItem default-open>
       <template #trigger="{ open }">
         <div class="flex items-center gap-2.5">
