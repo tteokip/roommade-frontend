@@ -22,6 +22,7 @@ import {
   updateEmergencyFundTarget,
   updateMonthlyRent,
 } from '@/api/living'
+import { completeDailyLifeIntro, hasCompletedDailyLifeIntro } from '@/utils/dailyLifeIntro'
 
 const route = useRoute()
 const router = useRouter()
@@ -199,7 +200,8 @@ const introCopy = [
   },
 ]
 const INTRO_WELCOME_STEP = -1
-const introStep = ref(route.query.intro === '1' ? INTRO_WELCOME_STEP : null)
+const shouldStartIntro = route.query.intro === '1' && !hasCompletedDailyLifeIntro()
+const introStep = ref(shouldStartIntro ? INTRO_WELCOME_STEP : null)
 const spotlightRect = ref(null)
 let introScrollTimer = null
 
@@ -246,6 +248,10 @@ function advanceIntro() {
     nextTick(focusIntroTarget)
   } else {
     introStep.value = null
+    completeDailyLifeIntro()
+
+    const { intro, ...remainingQuery } = route.query
+    if (intro) router.replace({ query: remainingQuery })
   }
 }
 
