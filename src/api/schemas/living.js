@@ -36,6 +36,14 @@ export const dailyChallengeSchema = z.object({
   levels: z.array(challengeLevelSchema),
 })
 
+export const latestChallengeResultSchema = z
+  .object({
+    challengeDate: backendDateSchema,
+    achievedLevel: z.number().int().positive().nullable(),
+    rewardCoin: z.number().int().nonnegative().nullable(),
+  })
+  .nullable()
+
 export const rirDiagnosisSchema = z.object({
   monthlyIncome: z.number(),
   expectedMonthlyRent: z.number(),

@@ -3,6 +3,7 @@ import {
   dailyChallengeSchema,
   dailyLivingCostOverviewSchema,
   emergencyFundSchema,
+  latestChallengeResultSchema,
   livingRentSchema,
   rirDiagnosisSchema,
 } from './schemas/living'
@@ -25,6 +26,11 @@ export async function updateEmergencyFundTarget(targetAmount) {
 export async function fetchDailyChallenge() {
   const { data } = await apiClient.get('/living/daily-challenges')
   return dailyChallengeSchema.parse(data.data)
+}
+
+export async function fetchLatestChallengeResult() {
+  const { data } = await apiClient.get('/living/daily-challenges/latest-result')
+  return latestChallengeResultSchema.parse(data.data)
 }
 
 // 월세 미입력(LIVING_009, 404)과 월 소득 미입력(PREPARATION_003, 422)은 에러가 아니라
