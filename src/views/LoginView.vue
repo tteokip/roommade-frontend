@@ -5,6 +5,7 @@ import { ZodError } from 'zod'
 
 import { login } from '@/api/user'
 import roommadeHouseLogo from '@/assets/roommade-house-logo.png'
+import { hasCompletedMyDataOnboarding, rememberCurrentUser } from '@/utils/mydataOnboarding'
 
 const router = useRouter()
 
@@ -34,7 +35,12 @@ async function submitLogin() {
 
   try {
     await login({ email: email.value, password: password.value })
-    await router.push({ name: 'home' })
+    rememberCurrentUser(email.value)
+
+    const nextRoute = hasCompletedMyDataOnboarding(email.value)
+      ? { name: 'home' }
+      : { name: 'mydata-connect' }
+    await router.push(nextRoute)
   } catch (error) {
     errorMessage.value = getErrorMessage(error)
   } finally {
