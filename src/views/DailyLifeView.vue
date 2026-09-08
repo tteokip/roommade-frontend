@@ -78,7 +78,7 @@ const LEVEL_ACCENTS = {
   },
 }
 const LEVEL_MAX_SPENDING = {
-  1: 30000,
+  1: 20000,
   2: 15000,
   3: 10000,
 }
@@ -355,7 +355,7 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="flex flex-col gap-4">
-            <AppCard ref="dailyChallengeCardEl" padding="sm">
+            <AppCard ref="dailyChallengeCardEl" padding="sm" variant="outlined">
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
@@ -500,7 +500,7 @@ onBeforeUnmount(() => {
               </AccordionItem>
             </AppCard>
 
-            <AppCard ref="emergencyFundCardEl" padding="sm">
+            <AppCard ref="emergencyFundCardEl" padding="sm" variant="outlined">
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
@@ -599,7 +599,12 @@ onBeforeUnmount(() => {
               </AccordionItem>
             </AppCard>
 
-            <AppCard v-if="rirDiagnosis?.state !== 'ready'" ref="rirCardEl" padding="sm">
+            <AppCard
+              v-if="rirDiagnosis?.state !== 'ready'"
+              ref="rirCardEl"
+              padding="sm"
+              variant="outlined"
+            >
               <AccordionItem default-open>
                 <template #trigger="{ open }">
                   <div class="flex items-center gap-2.5">
