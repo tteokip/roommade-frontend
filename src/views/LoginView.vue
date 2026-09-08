@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { ZodError } from 'zod'
 
 import { login } from '@/api/user'
-import roommadeHouseLogo from '@/assets/roommade-house-logo.png'
+import roommadeMark from '@/assets/roommade-mark.svg'
 import { hasCompletedMyDataOnboarding, rememberCurrentUser } from '@/utils/mydataOnboarding'
 
 const router = useRouter()
@@ -57,12 +57,8 @@ async function goToSignup() {
   <main class="min-h-screen bg-[#fcfbff] px-6 py-14 text-[#17112d] sm:px-10">
     <section class="mx-auto flex w-full max-w-[470px] flex-col">
       <header class="text-center">
-        <div class="relative mx-auto h-24 w-32 overflow-hidden" aria-hidden="true">
-          <img
-            :src="roommadeHouseLogo"
-            alt=""
-            class="absolute left-1/2 top-[-2.75rem] w-[11.75rem] max-w-none -translate-x-1/2 mix-blend-multiply"
-          />
+        <div class="mx-auto size-28" aria-hidden="true">
+          <img :src="roommadeMark" alt="" class="size-full object-contain" />
         </div>
         <h1 class="mt-3 text-[3rem] font-black tracking-[-0.11em]">룸메이드</h1>
         <p class="mt-3 text-lg font-medium tracking-[-0.04em] text-[#9ca3b3]">
