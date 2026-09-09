@@ -278,7 +278,12 @@ function retryHouseConfirmation() {
               :description="rirErrorDescription"
               @retry="refetchRir()"
             />
-            <RirDiagnosisCard v-else-if="rirDiagnosis" :diagnosis="rirDiagnosis" show-score />
+            <RirDiagnosisCard
+              v-else-if="rirDiagnosis"
+              :diagnosis="rirDiagnosis"
+              guidance-mode="rent-reduction"
+              show-score
+            />
             <EmptyState
               v-else
               title="RIR 진단 결과가 아직 없어요"

@@ -7,6 +7,11 @@ import { InfoIcon } from '@/shared/ui/icons'
 const props = defineProps({
   diagnosis: { type: Object, required: true },
   showScore: { type: Boolean, default: false },
+  guidanceMode: {
+    type: String,
+    default: 'rent-reduction',
+    validator: (value) => ['rent-reduction', 'income-increase'].includes(value),
+  },
 })
 
 const isExpanded = ref(true)
@@ -67,21 +72,36 @@ const markerLabelStyle = computed(() => ({
 }))
 
 const guidance = computed(() => {
-  if (props.diagnosis.status === 'NORMAL') {
+  const isIncomeGuidance = props.guidanceMode === 'income-increase'
+  const isTargetMet = isIncomeGuidance
+    ? props.diagnosis.status === 'NORMAL'
+    : props.diagnosis.requiredRentReduction === 0
+
+  if (isTargetMet) {
     return {
       message: '현재 월세 수준이면 목표 RIR을 달성할 수 있어요!',
-      requiredMonthlyIncome: null,
     }
   }
 
-  const targetRatio = props.diagnosis.targetRirPercent / 100
-  const requiredMonthlyIncome = targetRatio
-    ? Math.ceil(props.diagnosis.expectedMonthlyRent / targetRatio / 10_000) * 10_000
-    : 0
+  if (isIncomeGuidance) {
+    const targetRatio = props.diagnosis.targetRirPercent / 100
+    const requiredMonthlyIncome = targetRatio
+      ? Math.ceil(props.diagnosis.expectedMonthlyRent / targetRatio / 10_000) * 10_000
+      : 0
+
+    return {
+      prefix: '월 소득을 ',
+      amount: formatAmount(requiredMonthlyIncome),
+      suffix: ' 이상으로 높이면',
+      result: `RIR ${formatNumber(props.diagnosis.targetRirPercent)}%를 달성할 수 있어요!`,
+    }
+  }
 
   return {
-    message: null,
-    requiredMonthlyIncome: formatAmount(requiredMonthlyIncome),
+    prefix: '월세를 ',
+    amount: formatAmount(props.diagnosis.requiredRentReduction),
+    suffix: ' 낮추면',
+    result: `RIR ${formatNumber(props.diagnosis.targetRirPercent)}% 이하로 달성할 수 있어요!`,
   }
 })
 
@@ -224,12 +244,12 @@ function formatAmount(value) {
               <p class="text-[clamp(0.6875rem,3vw,0.8125rem)] leading-5 text-body">
                 <template v-if="guidance.message">{{ guidance.message }}</template>
                 <template v-else>
-                  {{ '월 소득을 '
+                  {{ guidance.prefix
                   }}<span class="text-sm font-extrabold text-brand-primary">{{
-                    guidance.requiredMonthlyIncome
+                    guidance.amount
                   }}</span
-                  >{{ ' 이상으로 높이면' }}<br />
-                  {{ `RIR ${formatNumber(diagnosis.targetRirPercent)}%를 달성할 수 있어요!` }}
+                  >{{ guidance.suffix }}<br />
+                  {{ guidance.result }}
                 </template>
               </p>
             </div>

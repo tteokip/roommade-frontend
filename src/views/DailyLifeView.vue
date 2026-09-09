@@ -679,6 +679,7 @@ onBeforeUnmount(() => {
               v-if="rirDiagnosis?.state === 'ready'"
               ref="rirCardEl"
               :diagnosis="rirDiagnosis.diagnosis"
+              guidance-mode="income-increase"
             />
           </div>
         </template>
