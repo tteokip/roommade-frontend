@@ -8,6 +8,10 @@ export function getYouthPolicies(params) {
   return apiClient.get('/youth-policies', { params }).then(unwrap)
 }
 
+export function getFeaturedYouthPolicies(params) {
+  return apiClient.get('/youth-policies/featured', { params }).then(unwrap)
+}
+
 export function getYouthPolicyDetail(youthPolicyId) {
   return apiClient.get(`/youth-policies/${youthPolicyId}`).then(unwrap)
 }

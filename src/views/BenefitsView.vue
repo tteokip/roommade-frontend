@@ -5,7 +5,7 @@ import {
   getFinancialProductDetail,
   getFinancialProducts,
   getYouthPolicyDetail,
-  getYouthPolicies,
+  getFeaturedYouthPolicies,
 } from '@/api/benefits'
 import {
   AppCard,
@@ -83,7 +83,7 @@ async function fetchPolicies() {
   policyError.value = false
 
   try {
-    const page = await getYouthPolicies(buildPolicyParams())
+    const page = await getFeaturedYouthPolicies(buildPolicyParams())
     policies.value = page.content ?? []
     policyTotal.value = page.totalElements ?? 0
     userName.value = page.userName ?? ''
