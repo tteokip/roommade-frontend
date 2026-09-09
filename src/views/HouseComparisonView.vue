@@ -53,7 +53,7 @@ function goToFirstRegister() {
     <AppHeader title="집 비교" mode="back" @back="router.back()" />
 
     <BottomTabLayout>
-      <main class="mx-auto max-w-md px-4 pt-2">
+      <main class="mx-auto max-w-md px-4 pt-4">
         <LoadingState v-if="isPending" message="집 비교 정보를 불러오는 중이에요." />
 
         <ErrorState
@@ -77,12 +77,14 @@ function goToFirstRegister() {
                 <p class="text-sm font-extrabold leading-snug text-ink">
                   스크린샷에서 AI가 핵심 정보를 찾아드려요
                 </p>
-                <p class="mt-1 text-xs text-muted">보증금·월세·면적을 한눈에 정리해요</p>
               </div>
               <span class="text-2xl" aria-hidden="true">🏡</span>
             </AppCard>
 
-            <AppCard variant="gradient" class="flex flex-col items-center gap-3 py-12 text-center">
+            <AppCard
+              variant="gradient"
+              class="flex flex-col items-center gap-3 border-2 border-brand-primary/25 py-12 text-center"
+            >
               <div class="grid size-16 place-items-center rounded-full bg-white shadow-card">
                 <HomeFilledIcon class="size-8 text-brand-primary" />
               </div>
