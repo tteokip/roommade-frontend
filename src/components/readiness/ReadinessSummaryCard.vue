@@ -60,7 +60,7 @@ const scoreFormulaLabel = computed(
     <div class="px-5 py-4 sm:px-6 sm:py-5">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-base font-bold text-muted">내 자립 준비도</p>
+          <p class="text-base font-bold text-ink">내 자립 준비도</p>
           <p class="mt-1.5 flex items-end leading-none">
             <strong class="text-5xl font-black tracking-tight text-[#241259]">
               {{ displayScore }}
