@@ -9,6 +9,14 @@ export function rememberCurrentUser(email) {
   sessionStorage.setItem(CURRENT_USER_EMAIL_KEY, normalizeEmail(email))
 }
 
+export function getCurrentUserEmail() {
+  try {
+    return normalizeEmail(sessionStorage.getItem(CURRENT_USER_EMAIL_KEY) ?? '')
+  } catch {
+    return ''
+  }
+}
+
 export function hasCompletedMyDataOnboarding(email) {
   const normalizedEmail = normalizeEmail(email)
   if (!normalizedEmail) return false

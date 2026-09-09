@@ -1,7 +1,14 @@
-const userId = import.meta.env.VITE_DEV_USER_ID || '1'
-const completionKey = `roommade:daily-life-intro-completed:${userId}`
+import { getCurrentUserEmail } from './mydataOnboarding.js'
+
+function getCompletionKey() {
+  const email = getCurrentUserEmail()
+  // 이전 개발용 ID 기록은 계정 간 공유되었으므로 새 키로 분리한다.
+  return email ? `roommade:daily-life-intro-completed:email:${email}` : null
+}
 
 export function hasCompletedDailyLifeIntro() {
+  const completionKey = getCompletionKey()
+  if (!completionKey) return false
   try {
     return window.localStorage.getItem(completionKey) === 'true'
   } catch {
@@ -10,6 +17,8 @@ export function hasCompletedDailyLifeIntro() {
 }
 
 export function completeDailyLifeIntro() {
+  const completionKey = getCompletionKey()
+  if (!completionKey) return
   try {
     window.localStorage.setItem(completionKey, 'true')
   } catch {
