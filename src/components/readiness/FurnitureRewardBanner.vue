@@ -1,5 +1,6 @@
 <script setup>
 import furnitureCouponIcon from '@/assets/furniture-coupon-icon.png'
+import { AppCard } from '@/shared/ui'
 
 defineProps({
   count: {
@@ -10,8 +11,10 @@ defineProps({
 </script>
 
 <template>
-  <section
-    class="flex items-center gap-3 rounded-control bg-gradient-to-r from-[#f4efff] to-[#eee7ff] px-4 py-3 shadow-card"
+  <AppCard
+    variant="outlined"
+    padding="none"
+    class="flex items-center gap-3 !rounded-control bg-gradient-to-r from-[#f4efff] to-[#eee7ff] px-4 py-3"
     role="status"
     aria-live="polite"
   >
@@ -34,5 +37,5 @@ defineProps({
     >
       상점으로
     </span>
-  </section>
+  </AppCard>
 </template>
